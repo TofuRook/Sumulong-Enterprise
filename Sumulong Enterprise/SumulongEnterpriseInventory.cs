@@ -5,12 +5,12 @@ using System.Windows.Forms;
 
 namespace Sumulong_Enterprise
 {
-    public partial class Form1 : Form
+    public partial class SumulongEnterpriseInventory : Form
     {
         private DataTable inventoryTable = new DataTable();
         private InventoryManager manager = new InventoryManager();
 
-        public Form1()
+        public SumulongEnterpriseInventory()
         {
             InitializeComponent();
         }

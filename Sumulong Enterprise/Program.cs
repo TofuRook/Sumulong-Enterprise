@@ -13,7 +13,7 @@ namespace Sumulong_Enterprise
             DatabaseInitializer.Initialize();
             DatabaseSeeder.Seed();
             ApplicationConfiguration.Initialize();
-            Application.Run(new Form1());
+            Application.Run(new SumulongEnterpriseInventory());
         }
     }
 }

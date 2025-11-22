@@ -1,6 +1,6 @@
 ﻿namespace Sumulong_Enterprise
 {
-    partial class Form1
+    partial class SumulongEnterpriseInventory
     {
         /// <summary>
         ///  Required designer variable.
@@ -136,7 +136,7 @@
             searchButton.UseVisualStyleBackColor = true;
             searchButton.Click += searchButton_Click;
             // 
-            // Form1
+            // SumulongEnterpriseInventory
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -146,8 +146,8 @@
             Controls.Add(brandComboBox);
             Controls.Add(modelComboBox);
             Controls.Add(dataGridViewInventory);
-            Name = "Form1";
-            Text = "Form1";
+            Name = "SumulongEnterpriseInventory";
+            Text = "SumulongEnterpriseInventory";
             Load += Form1_Load;
             ((System.ComponentModel.ISupportInitialize)dataGridViewInventory).EndInit();
             ResumeLayout(false);
