@@ -10,6 +10,8 @@ namespace Sumulong_Enterprise
         private DataTable inventoryTable = new DataTable();
         private InventoryManager manager = new InventoryManager();
 
+
+
         public SumulongEnterpriseInventory()
         {
             InitializeComponent();
@@ -17,89 +19,125 @@ namespace Sumulong_Enterprise
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Load inventory into DataGridView using the InventoryManager
-            inventoryTable = manager.LoadInventory();
-            dataGridViewInventory.DataSource = inventoryTable;
-
-            // Populate ComboBoxes from the database
-            manager.PopulateComboBox(modelComboBox,
-                "SELECT DISTINCT m.ModelName FROM MOTORCYCLE_MODELS m JOIN INVENTORY s ON s.ModelID = m.ModelID;");
-            manager.PopulateComboBox(brandComboBox, "SELECT DISTINCT Brand FROM PARTS;");
-            manager.PopulateComboBox(partComboBox, "SELECT DISTINCT PartName FROM PARTS;");
+            LoadInventory();
+            FillComboBox();
         }
 
 
         private void searchButton_Click(object sender, EventArgs e)
         {
-            ApplyFilters();
+            UseFilters();
         }
 
-        private void LoadInventoryData()
+        private void clearButton_Click(object sender, EventArgs e)
         {
-            if (dataGridViewInventory == null)
-            {
-                MessageBox.Show("DataGridView not initialized.");
+            ClearFilters();
+            LoadInventory();
+        }
+
+        private void dataGridViewInventory_CellContentDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0)
                 return;
-            }
 
-            dataGridViewInventory.AutoGenerateColumns = true;
+            var row = dataGridViewInventory.Rows[e.RowIndex];
 
-            try
-            {
-                using (var conn = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;"))
-                {
-                    conn.Open();
+            // 2. Retrieve all data fields using the column names from the SQL query
+            // Use the null conditional operator (?.) for safety.
+            string stockId = row.Cells["StockID"].Value?.ToString();
+            string partName = row.Cells["PartName"].Value?.ToString();
+            string partNumber = row.Cells["PartNumber"].Value?.ToString();
+            string brand = row.Cells["Brand"].Value?.ToString();
+            string modelName = row.Cells["ModelName"].Value?.ToString();
+            string supplierName = row.Cells["SupplierName"].Value?.ToString();
+            string locationName = row.Cells["LocationName"].Value?.ToString();
+            string quantity = row.Cells["Quantity"].Value?.ToString();
+            string srp = row.Cells["SRP"].Value?.ToString();
+            string wsPrice = row.Cells["WS_Price"].Value?.ToString();
+            string internalCode = row.Cells["InternalCode"].Value?.ToString();
 
-                    string query = @"
-                        SELECT 
-                            s.StockID,
-                            p.PartName,
-                            p.PartNumber,
-                            p.Brand,
-                            m.ModelName,
-                            sup.SupplierName,
-                            l.LocationName,
-                            s.Quantity,
-                            s.SRP,
-                            s.WS_Price,
-                            s.InternalCode
-                        FROM INVENTORY s
-                        JOIN PARTS p ON s.PartID = p.PartID
-                        JOIN MOTORCYCLE_MODELS m ON s.ModelID = m.ModelID
-                        JOIN SUPPLIERS sup ON s.SupplierID = sup.SupplierID
-                        JOIN LOCATIONS l ON s.LocationID = l.LocationID;
-                    ";
+            // 3. Format the collected data into a detailed message
+            string detailMessage =
+                $"?? Inventory Stock Details\n" +
+                $"------------------------------------------\n" +
+                $"**Stock ID:** {stockId}\n" +
+                $"**Part:** {partName} ({partNumber})\n" +
+                $"**Brand:** {brand}\n" +
+                $"**Model:** {modelName}\n" +
+                $"**Supplier:** {supplierName}\n" +
+                $"**Internal Code:** {internalCode}\n" +
+                $"------------------------------------------\n" +
+                $"**Location:** {locationName}\n" +
+                $"**Quantity:** {quantity}\n" +
+                $"------------------------------------------\n" +
+                $"**SRP (Selling Price):** {srp}\n" +
+                $"**WS Price (Wholesale):** {wsPrice}";
 
-                    using (var cmd = new SQLiteCommand(query, conn))
-                    using (var adapter = new SQLiteDataAdapter(cmd))
-                    {
-                        DataTable table = new DataTable();
-                        adapter.Fill(table);
-                        dataGridViewInventory.DataSource = table;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error loading data: {ex.Message}");
-            }
+            // 4. Display the detailed information
+            MessageBox.Show(detailMessage, "Inventory Item Details", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void ApplyFilters()
+        public void LoadInventory()
         {
-            string filter = "";
+            var dt = manager.LoadInventory();
+            dataGridViewInventory.DataSource = dt;
+            FormatInventoryGrid();
+        }
 
-            if (modelComboBox.SelectedItem != null)
-                filter += $"ModelName = '{modelComboBox.SelectedItem}'";
+        public void FillComboBox()
+        {
+            manager.PopulateComboBox(modelComboBox,
+                "SELECT DISTINCT m.ModelName FROM MOTORCYCLE_MODELS m " +
+                "JOIN INVENTORY s ON s.ModelID = m.ModelID;");
+            manager.PopulateComboBox(brandComboBox, "SELECT DISTINCT Brand FROM PARTS;");
+            manager.PopulateComboBox(partComboBox, "SELECT DISTINCT PartName FROM PARTS;");
+        }
 
-            if (brandComboBox.SelectedItem != null)
-                filter += (filter.Length > 0 ? " AND " : "") + $"Brand = '{brandComboBox.SelectedItem}'";
+        public void UseFilters()
+        {
+            var dt = manager.FilterInventory(
+                        brandComboBox.Text,
+                        modelComboBox.Text,
+                        partComboBox.Text
+                    );
 
-            if (partComboBox.SelectedItem != null)
-                filter += (filter.Length > 0 ? " AND " : "") + $"PartName = '{partComboBox.SelectedItem}'";
+            dataGridViewInventory.DataSource = dt;
+            FormatInventoryGrid();
+        }
 
-            if (inventoryTable != null)
-                inventoryTable.DefaultView.RowFilter = filter;
+        public void ClearFilters()
+        {
+            manager.ClearFilters(brandComboBox);
+            manager.ClearFilters(modelComboBox);
+            manager.ClearFilters(partComboBox);
+        }
+
+        private void FormatInventoryGrid()
+        {
+            var grid = dataGridViewInventory;
+
+            if (grid.Columns.Count == 0)
+                return;
+
+            grid.Columns["ModelName"].HeaderText = "Model/Motorcycle";
+            grid.Columns["Brand"].HeaderText = "Brand";
+            grid.Columns["PartName"].HeaderText = "Part Name";
+            grid.Columns["PartNumber"].HeaderText = "Part Number";
+            grid.Columns["Quantity"].HeaderText = "QTY";
+            grid.Columns["SRP"].HeaderText = "SRP";
+            grid.Columns["WS_Price"].HeaderText = "WS Price";
+            grid.Columns["SupplierName"].HeaderText = "Supplier";
+
+            grid.Columns["ModelName"].DisplayIndex = 0;
+            grid.Columns["Brand"].DisplayIndex = 1;
+            grid.Columns["PartName"].DisplayIndex = 2;
+            grid.Columns["PartNumber"].DisplayIndex = 3;
+            grid.Columns["Quantity"].DisplayIndex = 4;
+            grid.Columns["SRP"].DisplayIndex = 5;
+            grid.Columns["WS_Price"].DisplayIndex = 6;
+            grid.Columns["SupplierName"].DisplayIndex = 7;
+
+            grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         }
     }
 }

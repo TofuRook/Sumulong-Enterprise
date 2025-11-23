@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Data.SQLite;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography.Xml;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Sumulong_Enterprise
 {
@@ -62,14 +64,23 @@ namespace Sumulong_Enterprise
                     PartID INTEGER NOT NULL,
                     ModelID INTEGER NOT NULL,
                     SupplierID INTEGER NOT NULL,
-                    LocationID INTEGER NOT NULL,
                     Quantity INTEGER NOT NULL DEFAULT 0,
                     SRP REAL,
                     WS_Price REAL,
                     InternalCode TEXT,
                     FOREIGN KEY (PartID) REFERENCES PARTS(PartID),
                     FOREIGN KEY (ModelID) REFERENCES MOTORCYCLE_MODELS(ModelID),
-                    FOREIGN KEY (SupplierID) REFERENCES SUPPLIERS(SupplierID),
+                    FOREIGN KEY (SupplierID) REFERENCES SUPPLIERS(SupplierID)
+                );",
+                @"CREATE TABLE IF NOT EXISTS INVENTORY_LOCATIONS (
+                    StockLocationID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    StockID INTEGER NOT NULL,
+                    LocationID INTEGER NOT NULL,
+                    Quantity INTEGER NOT NULL,
+                    TransferCode TEXT,
+                    TransferDate TEXT,
+                    UNIQUE(StockID, LocationID),
+                    FOREIGN KEY (StockID) REFERENCES INVENTORY(StockID),
                     FOREIGN KEY (LocationID) REFERENCES LOCATIONS(LocationID)
                 );"
             };

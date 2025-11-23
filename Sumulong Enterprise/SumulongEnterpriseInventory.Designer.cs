@@ -41,17 +41,24 @@
             brandComboBox = new ComboBox();
             partComboBox = new ComboBox();
             searchButton = new Button();
+            clearButton = new Button();
             ((System.ComponentModel.ISupportInitialize)dataGridViewInventory).BeginInit();
             SuspendLayout();
             // 
             // dataGridViewInventory
             // 
+            dataGridViewInventory.AllowUserToAddRows = false;
+            dataGridViewInventory.AllowUserToDeleteRows = false;
             dataGridViewInventory.AllowUserToOrderColumns = true;
             dataGridViewInventory.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridViewInventory.Location = new Point(12, 208);
+            dataGridViewInventory.MultiSelect = false;
             dataGridViewInventory.Name = "dataGridViewInventory";
+            dataGridViewInventory.ReadOnly = true;
+            dataGridViewInventory.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridViewInventory.Size = new Size(1240, 701);
             dataGridViewInventory.TabIndex = 0;
+            dataGridViewInventory.CellContentDoubleClick += dataGridViewInventory_CellContentDoubleClick;
             // 
             // modelcolumn
             // 
@@ -103,7 +110,7 @@
             // 
             modelComboBox.FormattingEnabled = true;
             modelComboBox.Items.AddRange(new object[] { "Click 125", "Click 150", "Beat Fi", "Mio i 125", "Mio Sporty", "Aerox", "Nmax ", "Scooters", "Underbones" });
-            modelComboBox.Location = new Point(51, 179);
+            modelComboBox.Location = new Point(53, 177);
             modelComboBox.Name = "modelComboBox";
             modelComboBox.Size = new Size(100, 23);
             modelComboBox.TabIndex = 1;
@@ -112,7 +119,7 @@
             // 
             brandComboBox.FormattingEnabled = true;
             brandComboBox.Items.AddRange(new object[] { "Genuine", "Motul", "Shell", "Yamalube ", "RCB", "Ordinary", "Stainles Hexagonal Bolts", "Replacement" });
-            brandComboBox.Location = new Point(229, 179);
+            brandComboBox.Location = new Point(168, 178);
             brandComboBox.Name = "brandComboBox";
             brandComboBox.Size = new Size(96, 23);
             brandComboBox.TabIndex = 2;
@@ -121,14 +128,14 @@
             // 
             partComboBox.FormattingEnabled = true;
             partComboBox.Items.AddRange(new object[] { "Cylinder Block", "Piston Pin", "Motor Oil", "Mags", "Handle Grip", "Bolt" });
-            partComboBox.Location = new Point(404, 180);
+            partComboBox.Location = new Point(279, 177);
             partComboBox.Name = "partComboBox";
             partComboBox.Size = new Size(96, 23);
             partComboBox.TabIndex = 3;
             // 
             // searchButton
             // 
-            searchButton.Location = new Point(1035, 179);
+            searchButton.Location = new Point(478, 179);
             searchButton.Name = "searchButton";
             searchButton.Size = new Size(75, 23);
             searchButton.TabIndex = 4;
@@ -136,11 +143,22 @@
             searchButton.UseVisualStyleBackColor = true;
             searchButton.Click += searchButton_Click;
             // 
+            // clearButton
+            // 
+            clearButton.Location = new Point(559, 177);
+            clearButton.Name = "clearButton";
+            clearButton.Size = new Size(75, 23);
+            clearButton.TabIndex = 5;
+            clearButton.Text = "Clear";
+            clearButton.UseVisualStyleBackColor = true;
+            clearButton.Click += clearButton_Click;
+            // 
             // SumulongEnterpriseInventory
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 921);
+            Controls.Add(clearButton);
             Controls.Add(searchButton);
             Controls.Add(partComboBox);
             Controls.Add(brandComboBox);
@@ -151,6 +169,7 @@
             Load += Form1_Load;
             ((System.ComponentModel.ISupportInitialize)dataGridViewInventory).EndInit();
             ResumeLayout(false);
+
         }
 
         #endregion
@@ -168,5 +187,6 @@
         private DataGridViewTextBoxColumn srpcolumn;
         private DataGridViewTextBoxColumn wspcolumn;
         private DataGridViewTextBoxColumn suppliercolumn;
+        private Button clearButton;
     }
 }

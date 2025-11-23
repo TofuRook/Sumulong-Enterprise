@@ -11,7 +11,7 @@ namespace Sumulong_Enterprise
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             DatabaseInitializer.Initialize();
-            DatabaseSeeder.Seed();
+            //DatabaseSeeder.Seed();
             ApplicationConfiguration.Initialize();
             Application.Run(new SumulongEnterpriseInventory());
         }

@@ -20,7 +20,7 @@ namespace Sumulong_Enterprise
                     using (var cmd = new SQLiteCommand("PRAGMA journal_mode=WAL;", conn))
                         cmd.ExecuteNonQuery();
 
-                    // --- Reference Data ---
+                    // --- Reference Data Seeding ---
                     string[] locations = { "Main Warehouse", "Secondary Warehouse" };
                     foreach (var loc in locations)
                     {
@@ -66,20 +66,22 @@ namespace Sumulong_Enterprise
                         cmdPart.ExecuteNonQuery();
                     }
 
-                    // --- Insert Inventory ---
+                    // --- Inventory Creation & Location Assignment ---
                     Random rnd = new Random();
+
+                    // Get a fixed location ID for seeding the initial stock
+                    long mainWarehouseId = (long)new SQLiteCommand(
+                                "SELECT LocationID FROM LOCATIONS WHERE LocationName='Main Warehouse';", conn).ExecuteScalar();
+
+                    long defaultSupplierId = (long)new SQLiteCommand(
+                        "SELECT SupplierID FROM SUPPLIERS WHERE SupplierName='Default Supplier';", conn).ExecuteScalar();
+
 
                     foreach (var model in models)
                     {
                         foreach (var part in parts)
                         {
-                            // Get reference IDs
-                            long locationId = (long)new SQLiteCommand(
-                                "SELECT LocationID FROM LOCATIONS WHERE LocationName='Main Warehouse';", conn).ExecuteScalar();
-
-                            long supplierId = (long)new SQLiteCommand(
-                                "SELECT SupplierID FROM SUPPLIERS WHERE SupplierName='Default Supplier';", conn).ExecuteScalar();
-
+                            // Get Model ID
                             long modelId;
                             using (var cmdModelId = new SQLiteCommand(
                                 "SELECT ModelID FROM MOTORCYCLE_MODELS WHERE ModelName=@ModelName;", conn))
@@ -88,6 +90,7 @@ namespace Sumulong_Enterprise
                                 modelId = (long)cmdModelId.ExecuteScalar();
                             }
 
+                            // Get Part ID
                             long partId;
                             using (var cmdPartId = new SQLiteCommand(
                                 "SELECT PartID FROM PARTS WHERE PartName=@PartName AND PartNumber=@PartNumber AND Brand=@Brand;", conn))
@@ -98,21 +101,58 @@ namespace Sumulong_Enterprise
                                 partId = (long)cmdPartId.ExecuteScalar();
                             }
 
-                            // Insert into inventory
-                            using (var cmdInv = new SQLiteCommand(
-                                @"INSERT OR IGNORE INTO INVENTORY 
-                                (PartID, ModelID, SupplierID, LocationID, Quantity, SRP, WS_Price, InternalCode)
-                                VALUES (@PartID, @ModelID, @SupplierID, @LocationID, @Quantity, @SRP, @WS_Price, @InternalCode);", conn))
+                            // 1. Insert into INVENTORY (Base Stock Item)
+                            // We use SELECT last_insert_rowid() to get the ID of the new row.
+                            // The INSERT OR IGNORE behavior here is tricky: it will only insert the item once per (PartID, ModelID, SupplierID).
+                            string insertInventorySql = @"
+                                INSERT OR IGNORE INTO INVENTORY 
+                                (PartID, ModelID, SupplierID, SRP, WS_Price, InternalCode)
+                                VALUES (@PartID, @ModelID, @SupplierID, @SRP, @WS_Price, @InternalCode);
+                                SELECT last_insert_rowid();";
+
+                            using (var cmdInv = new SQLiteCommand(insertInventorySql, conn))
                             {
                                 cmdInv.Parameters.AddWithValue("@PartID", partId);
                                 cmdInv.Parameters.AddWithValue("@ModelID", modelId);
-                                cmdInv.Parameters.AddWithValue("@SupplierID", supplierId);
-                                cmdInv.Parameters.AddWithValue("@LocationID", locationId);
-                                cmdInv.Parameters.AddWithValue("@Quantity", rnd.Next(5, 50));
+                                cmdInv.Parameters.AddWithValue("@SupplierID", defaultSupplierId);
                                 cmdInv.Parameters.AddWithValue("@SRP", rnd.Next(50, 500));
                                 cmdInv.Parameters.AddWithValue("@WS_Price", rnd.Next(40, 400));
-                                cmdInv.Parameters.AddWithValue("@InternalCode", $"{part.Number}-{model}");
-                                cmdInv.ExecuteNonQuery();
+                                cmdInv.Parameters.AddWithValue("@InternalCode", $"{part.Number}-{model.Replace(" ", "")}");
+
+                                long stockId = (long)cmdInv.ExecuteScalar();
+
+                                // If a new INVENTORY record was created (stockId > 0 means a new row was inserted)
+                                // Note: In case of IGNORE, last_insert_rowid() might still return the last successful ID.
+                                // A better check is required for true "INSERT OR IGNORE" logic if not using a transaction.
+                                // For seeding, we'll assume it's new and attempt to find the StockID if it exists.
+
+                                if (stockId == 0)
+                                {
+                                    // If INSERT IGNORE happened, find the existing StockID
+                                    using var findCmd = new SQLiteCommand(@"
+                                        SELECT StockID FROM INVENTORY 
+                                        WHERE PartID=@PartID AND ModelID=@ModelID AND SupplierID=@SupplierID", conn);
+                                    findCmd.Parameters.AddWithValue("@PartID", partId);
+                                    findCmd.Parameters.AddWithValue("@ModelID", modelId);
+                                    findCmd.Parameters.AddWithValue("@SupplierID", defaultSupplierId);
+                                    stockId = (long)findCmd.ExecuteScalar();
+                                }
+
+                                // 2. Insert into INVENTORY_LOCATIONS (Assign Quantity to Location)
+                                // Only do this if we successfully found/created a StockID
+                                if (stockId > 0)
+                                {
+                                    using (var cmdInvLoc = new SQLiteCommand(
+                                        @"INSERT OR IGNORE INTO INVENTORY_LOCATIONS 
+                                        (StockID, LocationID, Quantity)
+                                        VALUES (@StockID, @LocationID, @Quantity);", conn))
+                                    {
+                                        cmdInvLoc.Parameters.AddWithValue("@StockID", stockId);
+                                        cmdInvLoc.Parameters.AddWithValue("@LocationID", mainWarehouseId);
+                                        cmdInvLoc.Parameters.AddWithValue("@Quantity", rnd.Next(5, 50));
+                                        cmdInvLoc.ExecuteNonQuery();
+                                    }
+                                }
                             }
                         }
                     }
@@ -127,4 +167,3 @@ namespace Sumulong_Enterprise
         }
     }
 }
-
