@@ -135,9 +135,10 @@
             // 
             // searchButton
             // 
-            searchButton.Location = new Point(478, 179);
+            searchButton.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            searchButton.Location = new Point(381, 177);
             searchButton.Name = "searchButton";
-            searchButton.Size = new Size(75, 23);
+            searchButton.Size = new Size(90, 24);
             searchButton.TabIndex = 4;
             searchButton.Text = "Search";
             searchButton.UseVisualStyleBackColor = true;
@@ -145,9 +146,10 @@
             // 
             // clearButton
             // 
-            clearButton.Location = new Point(559, 177);
+            clearButton.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            clearButton.Location = new Point(477, 178);
             clearButton.Name = "clearButton";
-            clearButton.Size = new Size(75, 23);
+            clearButton.Size = new Size(90, 23);
             clearButton.TabIndex = 5;
             clearButton.Text = "Clear";
             clearButton.UseVisualStyleBackColor = true;

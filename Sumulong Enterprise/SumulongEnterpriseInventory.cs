@@ -37,45 +37,18 @@ namespace Sumulong_Enterprise
 
         private void dataGridViewInventory_CellContentDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0)
-                return;
+            if (e.RowIndex >= 0)
+            {
+                // Get the StockID of the selected row
+                long stockId = Convert.ToInt64(dataGridViewInventory.Rows[e.RowIndex]
+                    .Cells["StockID"].Value);
 
-            var row = dataGridViewInventory.Rows[e.RowIndex];
-
-            // 2. Retrieve all data fields using the column names from the SQL query
-            // Use the null conditional operator (?.) for safety.
-            string stockId = row.Cells["StockID"].Value?.ToString();
-            string partName = row.Cells["PartName"].Value?.ToString();
-            string partNumber = row.Cells["PartNumber"].Value?.ToString();
-            string brand = row.Cells["Brand"].Value?.ToString();
-            string modelName = row.Cells["ModelName"].Value?.ToString();
-            string supplierName = row.Cells["SupplierName"].Value?.ToString();
-            string locationName = row.Cells["LocationName"].Value?.ToString();
-            string quantity = row.Cells["Quantity"].Value?.ToString();
-            string srp = row.Cells["SRP"].Value?.ToString();
-            string wsPrice = row.Cells["WS_Price"].Value?.ToString();
-            string internalCode = row.Cells["InternalCode"].Value?.ToString();
-
-            // 3. Format the collected data into a detailed message
-            string detailMessage =
-                $"?? Inventory Stock Details\n" +
-                $"------------------------------------------\n" +
-                $"**Stock ID:** {stockId}\n" +
-                $"**Part:** {partName} ({partNumber})\n" +
-                $"**Brand:** {brand}\n" +
-                $"**Model:** {modelName}\n" +
-                $"**Supplier:** {supplierName}\n" +
-                $"**Internal Code:** {internalCode}\n" +
-                $"------------------------------------------\n" +
-                $"**Location:** {locationName}\n" +
-                $"**Quantity:** {quantity}\n" +
-                $"------------------------------------------\n" +
-                $"**SRP (Selling Price):** {srp}\n" +
-                $"**WS Price (Wholesale):** {wsPrice}";
-
-            // 4. Display the detailed information
-            MessageBox.Show(detailMessage, "Inventory Item Details", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // Open the ItemDetails form for that stock
+                ItemDetails detailsForm = new ItemDetails(stockId);
+                detailsForm.ShowDialog();
+            }
         }
+
 
         public void LoadInventory()
         {
