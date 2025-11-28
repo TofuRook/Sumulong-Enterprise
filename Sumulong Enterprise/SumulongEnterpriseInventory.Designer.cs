@@ -110,7 +110,7 @@
             // 
             modelComboBox.FormattingEnabled = true;
             modelComboBox.Items.AddRange(new object[] { "Click 125", "Click 150", "Beat Fi", "Mio i 125", "Mio Sporty", "Aerox", "Nmax ", "Scooters", "Underbones" });
-            modelComboBox.Location = new Point(53, 177);
+            modelComboBox.Location = new Point(51, 178);
             modelComboBox.Name = "modelComboBox";
             modelComboBox.Size = new Size(100, 23);
             modelComboBox.TabIndex = 1;

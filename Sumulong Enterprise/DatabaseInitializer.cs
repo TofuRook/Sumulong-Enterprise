@@ -1,6 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography.Xml;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Sumulong_Enterprise
@@ -19,13 +24,16 @@ namespace Sumulong_Enterprise
                 SQLiteConnection.CreateFile(DatabaseFile);
             }
 
-            using var conn = new SQLiteConnection($"Data Source={DatabaseFile};Version=3;");
-            conn.Open();
+            using (var conn = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;"))
+            {
+                conn.Open();
+                using (var cmd = new SQLiteCommand("PRAGMA journal_mode=WAL;", conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
 
-            using var cmd = new SQLiteCommand("PRAGMA journal_mode=WAL;", conn);
-            cmd.ExecuteNonQuery();
-
-            CreateTables(conn);
+                CreateTables(conn);
+            }
         }
 
         private static void CreateTables(SQLiteConnection conn)
@@ -69,42 +77,36 @@ namespace Sumulong_Enterprise
                     StockID INTEGER NOT NULL,
                     LocationID INTEGER NOT NULL,
                     Quantity INTEGER NOT NULL,
-                    UnitType TEXT NOT NULL,
                     TransferCode TEXT,
                     TransferDate TEXT,
                     UNIQUE(StockID, LocationID),
                     FOREIGN KEY (StockID) REFERENCES INVENTORY(StockID),
                     FOREIGN KEY (LocationID) REFERENCES LOCATIONS(LocationID)
-                );",
-                @"CREATE TABLE IF NOT EXISTS STOCK_MOVEMENTS (
-                    MovementID INTEGER PRIMARY KEY AUTOINCREMENT,
-                    StockID INTEGER NOT NULL,
-                    FromLocationID INTEGER,
-                    ToLocationID INTEGER,
-                    Quantity INTEGER NOT NULL,
-                    UnitType TEXT NOT NULL,
-                    TransferCode TEXT,
-                    DateTime TEXT NOT NULL,
-                    User TEXT NOT NULL,
-                    MovementType TEXT NOT NULL,
-                    FOREIGN KEY (StockID) REFERENCES INVENTORY(StockID),
-                    FOREIGN KEY (FromLocationID) REFERENCES LOCATIONS(LocationID),
-                    FOREIGN KEY (ToLocationID) REFERENCES LOCATIONS(LocationID)
-                );",
-                @"CREATE INDEX IF NOT EXISTS idx_PartNumber ON PARTS(PartNumber);",
-                @"CREATE INDEX IF NOT EXISTS idx_StockID ON INVENTORY(StockID);"
+                );"
             };
 
             foreach (var sql in tableCommands)
             {
-                using var cmd = new SQLiteCommand(sql, conn);
-                cmd.ExecuteNonQuery();
+                using (var cmd = new SQLiteCommand(sql, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
             }
         }
 
         public static bool Initialized()
         {
-            return File.Exists(DatabaseFile);
+            try
+            {
+                // Check if the database file exists
+                return File.Exists(DatabaseFile);
+            }
+            catch (Exception ex)
+            {
+                // Log or display the error
+                MessageBox.Show($"Database initialization failed: {ex.Message}");
+                return false;
+            }
         }
     }
 }
