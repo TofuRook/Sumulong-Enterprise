@@ -13,9 +13,6 @@ namespace Sumulong_Enterprise
     {
         private string connectionString = "Data Source=SumulongInventory.db;Version=3;";
 
-        /// <summary>
-        /// Loads the full inventory, showing each stock item's quantity at its specific location.
-        /// </summary>
         public DataTable LoadInventory()
         {
             DataTable table = new DataTable();
@@ -54,9 +51,6 @@ namespace Sumulong_Enterprise
             return table;
         }
 
-        /// <summary>
-        /// Filters the inventory based on specified criteria.
-        /// </summary>
         public DataTable FilterInventory(string brand, string model, string part)
         {
             List<string> filters = new List<string>();
@@ -124,14 +118,10 @@ namespace Sumulong_Enterprise
             return table;
         }
 
-
-        /// <summary>
-        /// Populates a ComboBox with values from a specified query (e.g., list of Brands, Models).
-        /// </summary>
         public void PopulateComboBox(ComboBox comboBox, string query)
         {
             comboBox.Items.Clear();
-            comboBox.Items.Insert(0, " "); // Allow users to select "All" or no filter
+            comboBox.Items.Insert(0, " "); 
 
             using (var conn = new SQLiteConnection(connectionString))
             {
@@ -145,15 +135,158 @@ namespace Sumulong_Enterprise
             }
         }
 
-        /// <summary>
-        /// Resets the ComboBox selection to the default "no filter" option.
-        /// </summary>
         public void ClearFilters(ComboBox comboBox)
         {
             if (comboBox.Items.Count > 0)
             {
                 comboBox.SelectedIndex = 0;
             }
+        }
+
+        public void AddStock(long stockId, long locationId, int quantity, string unitType, string user)
+        {
+            if (quantity <= 0) throw new ArgumentException("Quantity must be positive");
+
+            using var conn = new SQLiteConnection(connectionString);
+            conn.Open();
+            using var transaction = conn.BeginTransaction();
+
+            // Update INVENTORY_LOCATIONS
+            string upsertSql = @"
+                INSERT INTO INVENTORY_LOCATIONS (StockID, LocationID, Quantity, UnitType)
+                VALUES (@StockID, @LocationID, @Quantity, @UnitType)
+                ON CONFLICT(StockID, LocationID) DO UPDATE SET Quantity = Quantity + @Quantity;";
+            using (var cmd = new SQLiteCommand(upsertSql, conn))
+            {
+                cmd.Parameters.AddWithValue("@StockID", stockId);
+                cmd.Parameters.AddWithValue("@LocationID", locationId);
+                cmd.Parameters.AddWithValue("@Quantity", quantity);
+                cmd.Parameters.AddWithValue("@UnitType", unitType);
+                cmd.ExecuteNonQuery();
+            }
+
+            // Log movement
+            string logSql = @"
+                INSERT INTO STOCK_MOVEMENTS 
+                (StockID, FromLocationID, ToLocationID, Quantity, UnitType, DateTime, User, MovementType)
+                VALUES (@StockID, NULL, @LocationID, @Quantity, @UnitType, @DateTime, @User, 'Add');";
+            using (var cmd = new SQLiteCommand(logSql, conn))
+            {
+                cmd.Parameters.AddWithValue("@StockID", stockId);
+                cmd.Parameters.AddWithValue("@LocationID", locationId);
+                cmd.Parameters.AddWithValue("@Quantity", quantity);
+                cmd.Parameters.AddWithValue("@UnitType", unitType);
+                cmd.Parameters.AddWithValue("@DateTime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                cmd.Parameters.AddWithValue("@User", user);
+                cmd.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+
+        public void DeductStock(long stockId, long locationId, int quantity, string unitType, string user)
+        {
+            if (quantity <= 0) throw new ArgumentException("Quantity must be positive");
+
+            using var conn = new SQLiteConnection(connectionString);
+            conn.Open();
+            using var transaction = conn.BeginTransaction();
+
+            // Check current stock
+            long currentQty = Convert.ToInt64(new SQLiteCommand(
+                "SELECT Quantity FROM INVENTORY_LOCATIONS WHERE StockID=@StockID AND LocationID=@LocationID;",
+                conn)
+            { Parameters = { new SQLiteParameter("@StockID", stockId), new SQLiteParameter("@LocationID", locationId) } }
+                .ExecuteScalar() ?? 0);
+
+            if (currentQty < quantity)
+                throw new InvalidOperationException("Not enough stock to deduct");
+
+            // Update INVENTORY_LOCATIONS
+            string updateSql = "UPDATE INVENTORY_LOCATIONS SET Quantity = Quantity - @Quantity WHERE StockID=@StockID AND LocationID=@LocationID;";
+            using (var cmd = new SQLiteCommand(updateSql, conn))
+            {
+                cmd.Parameters.AddWithValue("@StockID", stockId);
+                cmd.Parameters.AddWithValue("@LocationID", locationId);
+                cmd.Parameters.AddWithValue("@Quantity", quantity);
+                cmd.ExecuteNonQuery();
+            }
+
+            // Log movement
+            string logSql = @"
+                INSERT INTO STOCK_MOVEMENTS 
+                (StockID, FromLocationID, ToLocationID, Quantity, UnitType, DateTime, User, MovementType)
+                VALUES (@StockID, @LocationID, NULL, @Quantity, @UnitType, @DateTime, @User, 'Deduct');";
+            using (var cmd = new SQLiteCommand(logSql, conn))
+            {
+                cmd.Parameters.AddWithValue("@StockID", stockId);
+                cmd.Parameters.AddWithValue("@LocationID", locationId);
+                cmd.Parameters.AddWithValue("@Quantity", quantity);
+                cmd.Parameters.AddWithValue("@UnitType", unitType);
+                cmd.Parameters.AddWithValue("@DateTime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                cmd.Parameters.AddWithValue("@User", user);
+                cmd.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+
+        public void TransferStock(long stockId, long fromLocationId, long toLocationId, int quantity, string unitType, string transferCode, string user)
+        {
+            if (quantity <= 0) throw new ArgumentException("Quantity must be positive");
+            if (string.IsNullOrWhiteSpace(transferCode)) throw new ArgumentException("Transfer code required");
+
+            using var conn = new SQLiteConnection(connectionString);
+            conn.Open();
+            using var transaction = conn.BeginTransaction();
+
+            // Check current stock at source
+            long currentQty = Convert.ToInt64(new SQLiteCommand(
+                "SELECT Quantity FROM INVENTORY_LOCATIONS WHERE StockID=@StockID AND LocationID=@FromLocationId;",
+                conn)
+            { Parameters = { new SQLiteParameter("@StockID", stockId), new SQLiteParameter("@FromLocationId", fromLocationId) } }
+                .ExecuteScalar() ?? 0);
+
+            if (currentQty < quantity)
+                throw new InvalidOperationException("Not enough stock to transfer");
+
+            // Deduct from source
+            new SQLiteCommand(
+                "UPDATE INVENTORY_LOCATIONS SET Quantity = Quantity - @Quantity WHERE StockID=@StockID AND LocationID=@FromLocationId;",
+                conn)
+            { Parameters = { new SQLiteParameter("@StockID", stockId), new SQLiteParameter("@FromLocationId", fromLocationId), new SQLiteParameter("@Quantity", quantity) } }
+            .ExecuteNonQuery();
+
+            // Add to destination
+            string upsertSql = @"
+                INSERT INTO INVENTORY_LOCATIONS (StockID, LocationID, Quantity, UnitType)
+                VALUES (@StockID, @ToLocationId, @Quantity, @UnitType)
+                ON CONFLICT(StockID, LocationID) DO UPDATE SET Quantity = Quantity + @Quantity;";
+            new SQLiteCommand(upsertSql, conn)
+            { Parameters = { new SQLiteParameter("@StockID", stockId), new SQLiteParameter("@ToLocationId", toLocationId), new SQLiteParameter("@Quantity", quantity), new SQLiteParameter("@UnitType", unitType) } }
+            .ExecuteNonQuery();
+
+            // Log movement
+            string logSql = @"
+                INSERT INTO STOCK_MOVEMENTS
+                (StockID, FromLocationID, ToLocationID, Quantity, UnitType, TransferCode, DateTime, User, MovementType)
+                VALUES (@StockID, @FromLocationId, @ToLocationId, @Quantity, @UnitType, @TransferCode, @DateTime, @User, 'Transfer');";
+            new SQLiteCommand(logSql, conn)
+            {
+                Parameters =
+                {
+                    new SQLiteParameter("@StockID", stockId),
+                    new SQLiteParameter("@FromLocationId", fromLocationId),
+                    new SQLiteParameter("@ToLocationId", toLocationId),
+                    new SQLiteParameter("@Quantity", quantity),
+                    new SQLiteParameter("@UnitType", unitType),
+                    new SQLiteParameter("@TransferCode", transferCode),
+                    new SQLiteParameter("@DateTime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")),
+                    new SQLiteParameter("@User", user)
+                }
+            }.ExecuteNonQuery();
+
+            transaction.Commit();
         }
     }
 }

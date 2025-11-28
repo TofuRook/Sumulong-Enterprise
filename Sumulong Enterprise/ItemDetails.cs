@@ -13,7 +13,9 @@ namespace Sumulong_Enterprise
 {
     public partial class ItemDetails : Form
     {
+        private InventoryManager manager = new InventoryManager();
         private long _stockId;
+
         public ItemDetails(long stockId)
         {
             InitializeComponent();
