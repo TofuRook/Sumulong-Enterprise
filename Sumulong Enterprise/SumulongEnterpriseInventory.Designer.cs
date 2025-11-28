@@ -52,6 +52,7 @@
             dataGridViewInventory.AllowUserToAddRows = false;
             dataGridViewInventory.AllowUserToDeleteRows = false;
             dataGridViewInventory.AllowUserToOrderColumns = true;
+            dataGridViewInventory.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dataGridViewInventory.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridViewInventory.Location = new Point(12, 208);
             dataGridViewInventory.MultiSelect = false;

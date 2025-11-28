@@ -29,7 +29,18 @@
         private void InitializeComponent()
         {
             newItemTab = new TabPage();
+            btnSaveItems = new Button();
+            dataGridView1 = new DataGridView();
+            Model = new DataGridViewTextBoxColumn();
+            Brand = new DataGridViewTextBoxColumn();
+            PartName = new DataGridViewTextBoxColumn();
+            PartNumber = new DataGridViewTextBoxColumn();
+            Quantity = new DataGridViewTextBoxColumn();
+            SRP = new DataGridViewTextBoxColumn();
+            WS_Price = new DataGridViewTextBoxColumn();
+            Supplier = new DataGridViewTextBoxColumn();
             stockTab = new TabPage();
+            movementDataGridView = new DataGridView();
             ToLocationcomboBox = new ComboBox();
             label1 = new Label();
             codetextBox = new TextBox();
@@ -41,13 +52,18 @@
             itemdataGridView = new DataGridView();
             tabControl1 = new TabControl();
             editItemTab = new TabPage();
+            newItemTab.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
             stockTab.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)movementDataGridView).BeginInit();
             ((System.ComponentModel.ISupportInitialize)itemdataGridView).BeginInit();
             tabControl1.SuspendLayout();
             SuspendLayout();
             // 
             // newItemTab
             // 
+            newItemTab.Controls.Add(btnSaveItems);
+            newItemTab.Controls.Add(dataGridView1);
             newItemTab.Location = new Point(4, 24);
             newItemTab.Name = "newItemTab";
             newItemTab.Padding = new Padding(3);
@@ -56,8 +72,68 @@
             newItemTab.Text = "New Item";
             newItemTab.UseVisualStyleBackColor = true;
             // 
+            // btnSaveItems
+            // 
+            btnSaveItems.Location = new Point(648, 118);
+            btnSaveItems.Name = "btnSaveItems";
+            btnSaveItems.Size = new Size(97, 23);
+            btnSaveItems.TabIndex = 1;
+            btnSaveItems.Text = "Create Item";
+            btnSaveItems.UseVisualStyleBackColor = true;
+            btnSaveItems.Click += btnSaveItems_Click_1;
+            // 
+            // dataGridView1
+            // 
+            dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridView1.Columns.AddRange(new DataGridViewColumn[] { Model, Brand, PartName, PartNumber, Quantity, SRP, WS_Price, Supplier });
+            dataGridView1.Location = new Point(6, 147);
+            dataGridView1.Name = "dataGridView1";
+            dataGridView1.Size = new Size(756, 150);
+            dataGridView1.TabIndex = 0;
+            // 
+            // Model
+            // 
+            Model.HeaderText = "Model";
+            Model.Name = "Model";
+            // 
+            // Brand
+            // 
+            Brand.HeaderText = "Brand";
+            Brand.Name = "Brand";
+            // 
+            // PartName
+            // 
+            PartName.HeaderText = "PartName";
+            PartName.Name = "PartName";
+            // 
+            // PartNumber
+            // 
+            PartNumber.HeaderText = "PartNumber";
+            PartNumber.Name = "PartNumber";
+            // 
+            // Quantity
+            // 
+            Quantity.HeaderText = "Quantity";
+            Quantity.Name = "Quantity";
+            // 
+            // SRP
+            // 
+            SRP.HeaderText = "SRP";
+            SRP.Name = "SRP";
+            // 
+            // WS_Price
+            // 
+            WS_Price.HeaderText = "WS_Price";
+            WS_Price.Name = "WS_Price";
+            // 
+            // Supplier
+            // 
+            Supplier.HeaderText = "Supplier";
+            Supplier.Name = "Supplier";
+            // 
             // stockTab
             // 
+            stockTab.Controls.Add(movementDataGridView);
             stockTab.Controls.Add(ToLocationcomboBox);
             stockTab.Controls.Add(label1);
             stockTab.Controls.Add(codetextBox);
@@ -74,6 +150,18 @@
             stockTab.TabIndex = 0;
             stockTab.Text = "Control Stock";
             stockTab.UseVisualStyleBackColor = true;
+            // 
+            // movementDataGridView
+            // 
+            movementDataGridView.AllowUserToAddRows = false;
+            movementDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+            movementDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            movementDataGridView.Location = new Point(521, 140);
+            movementDataGridView.Name = "movementDataGridView";
+            movementDataGridView.ReadOnly = true;
+            movementDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            movementDataGridView.Size = new Size(244, 157);
+            movementDataGridView.TabIndex = 9;
             // 
             // ToLocationcomboBox
             // 
@@ -148,10 +236,11 @@
             // 
             // itemdataGridView
             // 
+            itemdataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
             itemdataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             itemdataGridView.Location = new Point(6, 140);
             itemdataGridView.Name = "itemdataGridView";
-            itemdataGridView.Size = new Size(756, 157);
+            itemdataGridView.Size = new Size(509, 157);
             itemdataGridView.TabIndex = 0;
             // 
             // tabControl1
@@ -182,8 +271,11 @@
             Controls.Add(tabControl1);
             Name = "ItemDetails";
             Text = "ItemDetails";
+            newItemTab.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
             stockTab.ResumeLayout(false);
             stockTab.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)movementDataGridView).EndInit();
             ((System.ComponentModel.ISupportInitialize)itemdataGridView).EndInit();
             tabControl1.ResumeLayout(false);
             ResumeLayout(false);
@@ -204,5 +296,16 @@
         private TextBox codetextBox;
         private ComboBox ToLocationcomboBox;
         private TabPage editItemTab;
+        private DataGridView movementDataGridView;
+        private DataGridView dataGridView1;
+        private DataGridViewTextBoxColumn Model;
+        private DataGridViewTextBoxColumn Brand;
+        private DataGridViewTextBoxColumn PartName;
+        private DataGridViewTextBoxColumn PartNumber;
+        private DataGridViewTextBoxColumn Quantity;
+        private DataGridViewTextBoxColumn SRP;
+        private DataGridViewTextBoxColumn WS_Price;
+        private DataGridViewTextBoxColumn Supplier;
+        private Button btnSaveItems;
     }
 }

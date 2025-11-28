@@ -2,13 +2,14 @@ using System;
 using System.Data;
 using System.Data.SQLite;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace Sumulong_Enterprise
 {
     public partial class SumulongEnterpriseInventory : Form
     {
         private InventoryManager manager = new InventoryManager();
-
+        
         public SumulongEnterpriseInventory()
         {
             InitializeComponent();
@@ -44,8 +45,8 @@ namespace Sumulong_Enterprise
 
                 long stockId = Convert.ToInt64(dataGridViewInventory.Rows[e.RowIndex].Cells["StockID"].Value);
 
-                ItemDetails detailsForm = new ItemDetails(stockId);
-                detailsForm.ShowDialog();
+                var itemForm = new ItemDetails(stockId, 0, this);
+                itemForm.ShowDialog();
             }
         }
 
@@ -133,9 +134,20 @@ namespace Sumulong_Enterprise
             grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         }
 
+        public void RefreshInventoryGrid()
+        {
+            dataGridViewInventory.DataSource = manager.LoadInventory(); // or whatever method you use
+            FormatInventoryGrid();
+        }
+
+
         private void addButton_Click(object sender, EventArgs e)
         {
+            long stockId = 0;          // Zero = new item
+            int startTabIndex = 1;     // Start on Create Items tab
 
+            var itemForm = new ItemDetails(stockId, startTabIndex, this);
+            itemForm.ShowDialog();
         }
 
         private void deleteButton_Click(object sender, EventArgs e)

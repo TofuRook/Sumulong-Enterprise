@@ -293,31 +293,55 @@ namespace Sumulong_Enterprise
                 return false;
             }
 
-            using (var conn = new SQLiteConnection(connectionString))
+            // --- Single transaction starts here ---
+            using var conn = new SQLiteConnection(connectionString);
+            conn.Open();
+            using var transaction = conn.BeginTransaction();
+
+            try
             {
-                conn.Open();
-                using (var transaction = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        // Deduct from source
-                        if (!DeductStock(stockId, fromLocationId, quantity, uom, transferCode))
-                            return false;
+                // Deduct from source
+                string sqlDeduct = "UPDATE INVENTORY_LOCATIONS SET Quantity = Quantity - @Qty WHERE StockID=@StockID AND LocationID=@FromLoc;";
+                using var cmdDeduct = new SQLiteCommand(sqlDeduct, conn, transaction);
+                cmdDeduct.Parameters.AddWithValue("@Qty", quantity);
+                cmdDeduct.Parameters.AddWithValue("@StockID", stockId);
+                cmdDeduct.Parameters.AddWithValue("@FromLoc", fromLocationId);
+                cmdDeduct.ExecuteNonQuery();
 
-                        // Add to destination
-                        if (!AddStock(stockId, toLocationId, quantity, uom, transferCode))
-                            return false;
+                // Add to destination
+                string sqlAdd = @"
+            INSERT INTO INVENTORY_LOCATIONS (StockID, LocationID, Quantity)
+            VALUES (@StockID, @ToLoc, @Qty)
+            ON CONFLICT(StockID, LocationID) DO UPDATE SET Quantity = Quantity + @Qty;";
+                using var cmdAdd = new SQLiteCommand(sqlAdd, conn, transaction);
+                cmdAdd.Parameters.AddWithValue("@StockID", stockId);
+                cmdAdd.Parameters.AddWithValue("@ToLoc", toLocationId);
+                cmdAdd.Parameters.AddWithValue("@Qty", quantity);
+                cmdAdd.ExecuteNonQuery();
 
-                        transaction.Commit();
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        MessageBox.Show("Error transferring stock: " + ex.Message);
-                        return false;
-                    }
-                }
+                // Log movement
+                string sqlMove = @"
+            INSERT INTO STOCK_MOVEMENTS
+            (StockID, FromLocationID, ToLocationID, Quantity, UnitType, TransferCode, MovementDate)
+            VALUES (@StockID, @FromLoc, @ToLoc, @Qty, @Unit, @Code, @Date);";
+                using var cmdMove = new SQLiteCommand(sqlMove, conn, transaction);
+                cmdMove.Parameters.AddWithValue("@StockID", stockId);
+                cmdMove.Parameters.AddWithValue("@FromLoc", fromLocationId);
+                cmdMove.Parameters.AddWithValue("@ToLoc", toLocationId);
+                cmdMove.Parameters.AddWithValue("@Qty", quantity);
+                cmdMove.Parameters.AddWithValue("@Unit", uom);
+                cmdMove.Parameters.AddWithValue("@Code", transferCode);
+                cmdMove.Parameters.AddWithValue("@Date", DateTime.Now);
+                cmdMove.ExecuteNonQuery();
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                MessageBox.Show($"Transfer failed: {ex.Message}");
+                return false;
             }
         }
 
@@ -408,5 +432,89 @@ namespace Sumulong_Enterprise
         }
 
         #endregion
+
+        public void AddOrUpdateItem(string model, string brand, string partName, string partNumber,
+        int quantity, decimal srp, decimal wsPrice, string supplier)
+        {
+            using var conn = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;");
+            conn.Open();
+            using var transaction = conn.BeginTransaction();
+
+            try
+            {
+                // 1. Ensure model exists
+                long modelId;
+                using (var cmd = new SQLiteCommand("SELECT ModelID FROM MOTORCYCLE_MODELS WHERE ModelName=@Model", conn))
+                {
+                    cmd.Parameters.AddWithValue("@Model", model);
+                    var result = cmd.ExecuteScalar();
+                    if (result != null)
+                        modelId = Convert.ToInt64(result);
+                    else
+                    {
+                        using var insert = new SQLiteCommand("INSERT INTO MOTORCYCLE_MODELS (ModelName) VALUES (@Model); SELECT last_insert_rowid();", conn);
+                        insert.Parameters.AddWithValue("@Model", model);
+                        modelId = (long)insert.ExecuteScalar();
+                    }
+                }
+
+                // 2. Ensure supplier exists
+                long supplierId;
+                using (var cmd = new SQLiteCommand("SELECT SupplierID FROM SUPPLIERS WHERE SupplierName=@Supplier", conn))
+                {
+                    cmd.Parameters.AddWithValue("@Supplier", supplier);
+                    var result = cmd.ExecuteScalar();
+                    if (result != null)
+                        supplierId = Convert.ToInt64(result);
+                    else
+                    {
+                        using var insert = new SQLiteCommand("INSERT INTO SUPPLIERS (SupplierName) VALUES (@Supplier); SELECT last_insert_rowid();", conn);
+                        insert.Parameters.AddWithValue("@Supplier", supplier);
+                        supplierId = (long)insert.ExecuteScalar();
+                    }
+                }
+
+                // 3. Ensure part exists
+                long partId;
+                using (var cmd = new SQLiteCommand("SELECT PartID FROM PARTS WHERE PartName=@Part AND PartNumber=@PartNumber", conn))
+                {
+                    cmd.Parameters.AddWithValue("@Part", partName);
+                    cmd.Parameters.AddWithValue("@PartNumber", partNumber);
+                    var result = cmd.ExecuteScalar();
+                    if (result != null)
+                        partId = Convert.ToInt64(result);
+                    else
+                    {
+                        using var insert = new SQLiteCommand(
+                            "INSERT INTO PARTS (PartName, PartNumber, Brand) VALUES (@Part, @PartNumber, @Brand); SELECT last_insert_rowid();", conn);
+                        insert.Parameters.AddWithValue("@Part", partName);
+                        insert.Parameters.AddWithValue("@PartNumber", partNumber);
+                        insert.Parameters.AddWithValue("@Brand", brand);
+                        partId = (long)insert.ExecuteScalar();
+                    }
+                }
+
+                // 4. Insert into INVENTORY
+                using (var cmd = new SQLiteCommand(
+                    "INSERT INTO INVENTORY (PartID, ModelID, SupplierID, Quantity, SRP, WS_Price, InternalCode) VALUES (@PartID,@ModelID,@SupplierID,@Qty,@SRP,@WS,@Code);", conn))
+                {
+                    cmd.Parameters.AddWithValue("@PartID", partId);
+                    cmd.Parameters.AddWithValue("@ModelID", modelId);
+                    cmd.Parameters.AddWithValue("@SupplierID", supplierId);
+                    cmd.Parameters.AddWithValue("@Qty", quantity);
+                    cmd.Parameters.AddWithValue("@SRP", srp);
+                    cmd.Parameters.AddWithValue("@WS", wsPrice);
+                    cmd.Parameters.AddWithValue("@Code", Guid.NewGuid().ToString());
+                    cmd.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
     }
 }

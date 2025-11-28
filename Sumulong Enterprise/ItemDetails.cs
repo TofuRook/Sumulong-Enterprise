@@ -8,17 +8,26 @@ namespace Sumulong_Enterprise
     public partial class ItemDetails : Form
     {
         private long _stockId;
-        private InventoryManager _manager;
+        private int _startTabIndex = 0;
+        private SumulongEnterpriseInventory _mainForm; // store main form reference
 
-        public ItemDetails(long stockId)
+        private InventoryManager manager = new InventoryManager();
+
+        public ItemDetails(long stockId, int startTabIndex, SumulongEnterpriseInventory mainForm)
         {
             InitializeComponent();
             _stockId = stockId;
-            _manager = new InventoryManager();
+            _startTabIndex = startTabIndex;
+
+            InitializeDataGridView();
 
             LoadItemData();
             LoadLocations();
             LoadMovementHistory();
+
+            tabControl1.SelectedIndex = _startTabIndex;
+            _startTabIndex = startTabIndex;
+            _mainForm = mainForm;
         }
 
         private void Addbutton_Click(object sender, EventArgs e)
@@ -40,7 +49,7 @@ namespace Sumulong_Enterprise
             int locationId = Convert.ToInt32(((ComboBoxItem)LocationcomboBox.SelectedItem).Tag);
             string uom = "pcs"; // Or fetch from a textbox if needed
 
-            if (_manager.AddStock(_stockId, locationId, qty, uom))
+            if (manager.AddStock(_stockId, locationId, qty, uom))
             {
                 MessageBox.Show("Quantity added successfully!");
                 LoadItemData();
@@ -67,7 +76,7 @@ namespace Sumulong_Enterprise
             int locationId = Convert.ToInt32(((ComboBoxItem)LocationcomboBox.SelectedItem).Tag);
             string uom = "pcs";
 
-            if (_manager.DeductStock(_stockId, locationId, qty, uom))
+            if (manager.DeductStock(_stockId, locationId, qty, uom))
             {
                 MessageBox.Show("Quantity deducted successfully!");
                 LoadItemData();
@@ -107,7 +116,7 @@ namespace Sumulong_Enterprise
             string uom = "pcs"; // Unit of measurement
             string transferCode = codetextBox.Text;
 
-            if (_manager.TransferStock(_stockId, fromLocationId, toLocationId, qty, uom, transferCode))
+            if (manager.TransferStock(_stockId, fromLocationId, toLocationId, qty, uom, transferCode))
             {
                 MessageBox.Show("Transfer completed successfully.");
                 LoadItemData();
@@ -186,7 +195,42 @@ namespace Sumulong_Enterprise
 
         private void LoadMovementHistory()
         {
-            // Implement movement history retrieval if needed
+            using var conn = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;");
+            conn.Open();
+
+            string query = @"
+        SELECT 
+            sm.MovementID,
+            fl.LocationName AS FromLocation,
+            tl.LocationName AS ToLocation,
+            sm.Quantity,
+            sm.UnitType,
+            sm.TransferCode,
+            sm.MovementDate,
+            CASE
+                WHEN sm.FromLocationID IS NULL THEN 'ADD'
+                WHEN sm.ToLocationID IS NULL THEN 'DEDUCT'
+                ELSE 'TRANSFER'
+            END AS MovementType
+        FROM STOCK_MOVEMENTS sm
+        LEFT JOIN LOCATIONS fl ON sm.FromLocationID = fl.LocationID
+        LEFT JOIN LOCATIONS tl ON sm.ToLocationID = tl.LocationID
+        WHERE sm.StockID = @StockID
+        ORDER BY sm.MovementDate DESC;
+    ";
+
+            using var cmd = new SQLiteCommand(query, conn);
+            cmd.Parameters.AddWithValue("@StockID", _stockId);
+
+            using var adapter = new System.Data.SQLite.SQLiteDataAdapter(cmd);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+
+            movementDataGridView.DataSource = dt; // make sure you have a DataGridView named movementDataGridView
+
+            // Optional: hide MovementID column
+            if (movementDataGridView.Columns.Contains("MovementID"))
+                movementDataGridView.Columns["MovementID"].Visible = false;
         }
 
         private class ComboBoxItem
@@ -194,6 +238,72 @@ namespace Sumulong_Enterprise
             public string Text { get; set; }
             public object Tag { get; set; }
             public override string ToString() => Text;
+        }
+
+        private InventoryManager GetManager()
+        {
+            return manager;
+        }
+
+        private void InitializeDataGridView()
+        {
+            dataGridView1.Columns.Clear();
+
+            dataGridView1.Columns.Add("Model", "Model");
+            dataGridView1.Columns.Add("Brand", "Brand");
+            dataGridView1.Columns.Add("PartName", "Part Name");
+            dataGridView1.Columns.Add("PartNumber", "Part Number");
+            dataGridView1.Columns.Add("Quantity", "Quantity");
+            dataGridView1.Columns.Add("SRP", "SRP");
+            dataGridView1.Columns.Add("WS_Price", "WS Price");
+            dataGridView1.Columns.Add("Supplier", "Supplier");
+
+            // Optional: make numeric columns right-aligned
+            dataGridView1.Columns["Quantity"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            dataGridView1.Columns["SRP"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+            dataGridView1.Columns["WS_Price"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+
+            // Optional: auto-size columns
+            dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        }
+
+        private void btnSaveItems_Click_1(object sender, EventArgs e)
+        {
+            foreach (DataGridViewRow row in dataGridView1.Rows)
+            {
+                if (row.IsNewRow) continue;
+
+                string model = row.Cells["Model"].Value?.ToString();
+                string brand = row.Cells["Brand"].Value?.ToString();
+                string partName = row.Cells["PartName"].Value?.ToString();
+
+                // This is the updated partNumber handling
+                string partNumber = row.Cells["PartNumber"].Value?.ToString();
+                partNumber = string.IsNullOrWhiteSpace(partNumber) ? "N/A" : partNumber;
+
+                int quantity = int.TryParse(row.Cells["Quantity"].Value?.ToString(), out int q) ? q : 0;
+                decimal srp = decimal.TryParse(row.Cells["SRP"].Value?.ToString(), out decimal s) ? s : 0;
+                decimal wsPrice = decimal.TryParse(row.Cells["WS_Price"].Value?.ToString(), out decimal w) ? w : 0;
+                string supplier = row.Cells["Supplier"].Value?.ToString();
+
+                if (string.IsNullOrWhiteSpace(model) || string.IsNullOrWhiteSpace(partName))
+                    continue;
+
+                try
+                {
+                    manager.AddOrUpdateItem(model, brand, partName, partNumber, quantity, srp, wsPrice, supplier);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error saving row: {ex.Message}");
+                }
+            }
+
+            MessageBox.Show("Items successfully added!");
+            dataGridView1.Rows.Clear();
+
+            // Refresh main grid
+            _mainForm?.RefreshInventoryGrid();
         }
     }
 }
