@@ -2,15 +2,12 @@
 {
     partial class InventoryOverviewForm
     {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
+        private DataGridView dataGridView1;
+        private Panel panel1;
+        private Panel panel2;
+        private Panel panel3;
 
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -20,12 +17,6 @@
             base.Dispose(disposing);
         }
 
-        #region Windows Form Designer generated code
-
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
             dataGridView1 = new DataGridView();
@@ -49,7 +40,6 @@
             panel1.Name = "panel1";
             panel1.Size = new Size(200, 100);
             panel1.TabIndex = 1;
-            panel1.Paint += this.panel1_Paint;
             // 
             // panel2
             // 
@@ -75,16 +65,9 @@
             Controls.Add(panel1);
             Controls.Add(dataGridView1);
             Name = "InventoryOverviewForm";
-            Text = "Form1";
+            Text = "Inventory Overview";
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
             ResumeLayout(false);
         }
-
-        #endregion
-
-        private DataGridView dataGridView1;
-        private Panel panel1;
-        private Panel panel2;
-        private Panel panel3;
     }
 }

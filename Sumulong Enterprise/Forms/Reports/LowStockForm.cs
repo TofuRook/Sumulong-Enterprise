@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace Sumulong_Enterprise.Forms.Reports
 {
-    public partial class StockPerLocationForm : Form
+    public partial class LowStockForm : Form
     {
-        public StockPerLocationForm()
+        public LowStockForm()
         {
             InitializeComponent();
         }
