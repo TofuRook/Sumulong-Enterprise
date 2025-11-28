@@ -28,8 +28,9 @@
         /// </summary>
         private void InitializeComponent()
         {
-            tabPage2 = new TabPage();
-            tabPage1 = new TabPage();
+            newItemTab = new TabPage();
+            stockTab = new TabPage();
+            ToLocationcomboBox = new ComboBox();
             label1 = new Label();
             codetextBox = new TextBox();
             LocationcomboBox = new ComboBox();
@@ -39,43 +40,54 @@
             Addbutton = new Button();
             itemdataGridView = new DataGridView();
             tabControl1 = new TabControl();
-            tabPage1.SuspendLayout();
+            editItemTab = new TabPage();
+            stockTab.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)itemdataGridView).BeginInit();
             tabControl1.SuspendLayout();
             SuspendLayout();
             // 
-            // tabPage2
+            // newItemTab
             // 
-            tabPage2.Location = new Point(4, 24);
-            tabPage2.Name = "tabPage2";
-            tabPage2.Padding = new Padding(3);
-            tabPage2.Size = new Size(768, 303);
-            tabPage2.TabIndex = 1;
-            tabPage2.Text = "tabPage2";
-            tabPage2.UseVisualStyleBackColor = true;
+            newItemTab.Location = new Point(4, 24);
+            newItemTab.Name = "newItemTab";
+            newItemTab.Padding = new Padding(3);
+            newItemTab.Size = new Size(768, 303);
+            newItemTab.TabIndex = 1;
+            newItemTab.Text = "New Item";
+            newItemTab.UseVisualStyleBackColor = true;
             // 
-            // tabPage1
+            // stockTab
             // 
-            tabPage1.Controls.Add(label1);
-            tabPage1.Controls.Add(codetextBox);
-            tabPage1.Controls.Add(LocationcomboBox);
-            tabPage1.Controls.Add(QuantitytextBox);
-            tabPage1.Controls.Add(transferbutton);
-            tabPage1.Controls.Add(Deductbutton);
-            tabPage1.Controls.Add(Addbutton);
-            tabPage1.Controls.Add(itemdataGridView);
-            tabPage1.Location = new Point(4, 24);
-            tabPage1.Name = "tabPage1";
-            tabPage1.Padding = new Padding(3);
-            tabPage1.Size = new Size(768, 303);
-            tabPage1.TabIndex = 0;
-            tabPage1.Text = "tabPage1";
-            tabPage1.UseVisualStyleBackColor = true;
+            stockTab.Controls.Add(ToLocationcomboBox);
+            stockTab.Controls.Add(label1);
+            stockTab.Controls.Add(codetextBox);
+            stockTab.Controls.Add(LocationcomboBox);
+            stockTab.Controls.Add(QuantitytextBox);
+            stockTab.Controls.Add(transferbutton);
+            stockTab.Controls.Add(Deductbutton);
+            stockTab.Controls.Add(Addbutton);
+            stockTab.Controls.Add(itemdataGridView);
+            stockTab.Location = new Point(4, 24);
+            stockTab.Name = "stockTab";
+            stockTab.Padding = new Padding(3);
+            stockTab.Size = new Size(768, 303);
+            stockTab.TabIndex = 0;
+            stockTab.Text = "Control Stock";
+            stockTab.UseVisualStyleBackColor = true;
+            // 
+            // ToLocationcomboBox
+            // 
+            ToLocationcomboBox.FormattingEnabled = true;
+            ToLocationcomboBox.Location = new Point(267, 37);
+            ToLocationcomboBox.Name = "ToLocationcomboBox";
+            ToLocationcomboBox.Size = new Size(121, 23);
+            ToLocationcomboBox.TabIndex = 8;
+            ToLocationcomboBox.Text = "Source";
             // 
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(462, 75);
+            label1.Location = new Point(530, 45);
             label1.Name = "label1";
             label1.Size = new Size(147, 15);
             label1.TabIndex = 7;
@@ -83,7 +95,7 @@
             // 
             // codetextBox
             // 
-            codetextBox.Location = new Point(462, 96);
+            codetextBox.Location = new Point(530, 75);
             codetextBox.Name = "codetextBox";
             codetextBox.Size = new Size(100, 23);
             codetextBox.TabIndex = 6;
@@ -91,21 +103,22 @@
             // LocationcomboBox
             // 
             LocationcomboBox.FormattingEnabled = true;
-            LocationcomboBox.Location = new Point(462, 37);
+            LocationcomboBox.Location = new Point(394, 37);
             LocationcomboBox.Name = "LocationcomboBox";
             LocationcomboBox.Size = new Size(121, 23);
             LocationcomboBox.TabIndex = 5;
+            LocationcomboBox.Text = "Destination";
             // 
             // QuantitytextBox
             // 
-            QuantitytextBox.Location = new Point(6, 36);
+            QuantitytextBox.Location = new Point(135, 37);
             QuantitytextBox.Name = "QuantitytextBox";
             QuantitytextBox.Size = new Size(100, 23);
             QuantitytextBox.TabIndex = 4;
             // 
             // transferbutton
             // 
-            transferbutton.Location = new Point(621, 36);
+            transferbutton.Location = new Point(267, 75);
             transferbutton.Name = "transferbutton";
             transferbutton.Size = new Size(75, 23);
             transferbutton.TabIndex = 3;
@@ -115,7 +128,7 @@
             // 
             // Deductbutton
             // 
-            Deductbutton.Location = new Point(138, 75);
+            Deductbutton.Location = new Point(135, 104);
             Deductbutton.Name = "Deductbutton";
             Deductbutton.Size = new Size(103, 23);
             Deductbutton.TabIndex = 2;
@@ -125,7 +138,7 @@
             // 
             // Addbutton
             // 
-            Addbutton.Location = new Point(138, 35);
+            Addbutton.Location = new Point(135, 75);
             Addbutton.Name = "Addbutton";
             Addbutton.Size = new Size(103, 23);
             Addbutton.TabIndex = 1;
@@ -143,13 +156,23 @@
             // 
             // tabControl1
             // 
-            tabControl1.Controls.Add(tabPage1);
-            tabControl1.Controls.Add(tabPage2);
+            tabControl1.Controls.Add(stockTab);
+            tabControl1.Controls.Add(newItemTab);
+            tabControl1.Controls.Add(editItemTab);
             tabControl1.Location = new Point(12, 12);
             tabControl1.Name = "tabControl1";
             tabControl1.SelectedIndex = 0;
             tabControl1.Size = new Size(776, 331);
             tabControl1.TabIndex = 0;
+            // 
+            // editItemTab
+            // 
+            editItemTab.Location = new Point(4, 24);
+            editItemTab.Name = "editItemTab";
+            editItemTab.Size = new Size(768, 303);
+            editItemTab.TabIndex = 2;
+            editItemTab.Text = "Edit Item";
+            editItemTab.UseVisualStyleBackColor = true;
             // 
             // ItemDetails
             // 
@@ -159,8 +182,8 @@
             Controls.Add(tabControl1);
             Name = "ItemDetails";
             Text = "ItemDetails";
-            tabPage1.ResumeLayout(false);
-            tabPage1.PerformLayout();
+            stockTab.ResumeLayout(false);
+            stockTab.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)itemdataGridView).EndInit();
             tabControl1.ResumeLayout(false);
             ResumeLayout(false);
@@ -168,8 +191,8 @@
 
         #endregion
 
-        private TabPage tabPage2;
-        private TabPage tabPage1;
+        private TabPage newItemTab;
+        private TabPage stockTab;
         private TextBox QuantitytextBox;
         private Button transferbutton;
         private Button Deductbutton;
@@ -179,5 +202,7 @@
         private ComboBox LocationcomboBox;
         private Label label1;
         private TextBox codetextBox;
+        private ComboBox ToLocationcomboBox;
+        private TabPage editItemTab;
     }
 }

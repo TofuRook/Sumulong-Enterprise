@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography.Xml;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Sumulong_Enterprise
@@ -18,19 +13,18 @@ namespace Sumulong_Enterprise
         {
             bool newDb = !File.Exists(DatabaseFile);
 
-            // Create DB file if it doesn't exist
             if (newDb)
             {
                 SQLiteConnection.CreateFile(DatabaseFile);
             }
 
-            using (var conn = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;"))
+            using (var conn = new SQLiteConnection($"Data Source={DatabaseFile};Version=3;"))
             {
                 conn.Open();
+
+                // Enable WAL mode for better concurrency
                 using (var cmd = new SQLiteCommand("PRAGMA journal_mode=WAL;", conn))
-                {
                     cmd.ExecuteNonQuery();
-                }
 
                 CreateTables(conn);
             }
@@ -82,31 +76,32 @@ namespace Sumulong_Enterprise
                     UNIQUE(StockID, LocationID),
                     FOREIGN KEY (StockID) REFERENCES INVENTORY(StockID),
                     FOREIGN KEY (LocationID) REFERENCES LOCATIONS(LocationID)
+                );",
+                @"CREATE TABLE IF NOT EXISTS STOCK_MOVEMENTS (
+                    MovementID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    StockID INTEGER NOT NULL,
+                    FromLocationID INTEGER,
+                    ToLocationID INTEGER,
+                    Quantity INTEGER NOT NULL,
+                    UnitType TEXT NOT NULL,
+                    TransferCode TEXT,
+                    MovementDate TEXT NOT NULL,
+                    FOREIGN KEY (StockID) REFERENCES INVENTORY(StockID),
+                    FOREIGN KEY (FromLocationID) REFERENCES LOCATIONS(LocationID),
+                    FOREIGN KEY (ToLocationID) REFERENCES LOCATIONS(LocationID)
                 );"
             };
 
             foreach (var sql in tableCommands)
             {
                 using (var cmd = new SQLiteCommand(sql, conn))
-                {
                     cmd.ExecuteNonQuery();
-                }
             }
         }
 
         public static bool Initialized()
         {
-            try
-            {
-                // Check if the database file exists
-                return File.Exists(DatabaseFile);
-            }
-            catch (Exception ex)
-            {
-                // Log or display the error
-                MessageBox.Show($"Database initialization failed: {ex.Message}");
-                return false;
-            }
+            return File.Exists(DatabaseFile);
         }
     }
 }

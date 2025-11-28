@@ -42,6 +42,8 @@
             partComboBox = new ComboBox();
             searchButton = new Button();
             clearButton = new Button();
+            addButton = new Button();
+            deleteButton = new Button();
             ((System.ComponentModel.ISupportInitialize)dataGridViewInventory).BeginInit();
             SuspendLayout();
             // 
@@ -155,11 +157,35 @@
             clearButton.UseVisualStyleBackColor = true;
             clearButton.Click += clearButton_Click;
             // 
+            // addButton
+            // 
+            addButton.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            addButton.Location = new Point(573, 178);
+            addButton.Name = "addButton";
+            addButton.Size = new Size(90, 23);
+            addButton.TabIndex = 6;
+            addButton.Text = "Add Item";
+            addButton.UseVisualStyleBackColor = true;
+            addButton.Click += addButton_Click;
+            // 
+            // deleteButton
+            // 
+            deleteButton.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            deleteButton.Location = new Point(669, 179);
+            deleteButton.Name = "deleteButton";
+            deleteButton.Size = new Size(90, 23);
+            deleteButton.TabIndex = 7;
+            deleteButton.Text = "Delete Item";
+            deleteButton.UseVisualStyleBackColor = true;
+            deleteButton.Click += deleteButton_Click;
+            // 
             // SumulongEnterpriseInventory
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1264, 921);
+            Controls.Add(deleteButton);
+            Controls.Add(addButton);
             Controls.Add(clearButton);
             Controls.Add(searchButton);
             Controls.Add(partComboBox);
@@ -190,5 +216,7 @@
         private DataGridViewTextBoxColumn wspcolumn;
         private DataGridViewTextBoxColumn suppliercolumn;
         private Button clearButton;
+        private Button addButton;
+        private Button deleteButton;
     }
 }

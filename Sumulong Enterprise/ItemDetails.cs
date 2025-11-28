@@ -8,15 +8,17 @@ namespace Sumulong_Enterprise
     public partial class ItemDetails : Form
     {
         private long _stockId;
+        private InventoryManager _manager;
 
         public ItemDetails(long stockId)
         {
             InitializeComponent();
             _stockId = stockId;
+            _manager = new InventoryManager();
 
             LoadItemData();
             LoadLocations();
-            LoadMovementHistory(); // safe
+            LoadMovementHistory();
         }
 
         private void Addbutton_Click(object sender, EventArgs e)
@@ -28,26 +30,22 @@ namespace Sumulong_Enterprise
                 return;
             }
 
-            using (SQLiteConnection con = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;"))
+            if (LocationcomboBox.SelectedIndex == -1)
             {
-                con.Open();
-
-                string updateQuery = "UPDATE INVENTORY SET Quantity = Quantity + @Qty WHERE StockID = @StockID";
-                SQLiteCommand cmd = new SQLiteCommand(updateQuery, con);
-                cmd.Parameters.AddWithValue("@Qty", qty);
-                cmd.Parameters.AddWithValue("@StockID", _stockId);
-                cmd.ExecuteNonQuery();
-
-                string logQuery = "INSERT INTO MOVEMENTS (StockID, ActionType, Quantity, Date) VALUES (@StockID, 'ADD', @Qty, DATETIME('now'))";
-                SQLiteCommand logCmd = new SQLiteCommand(logQuery, con);
-                logCmd.Parameters.AddWithValue("@StockID", _stockId);
-                logCmd.Parameters.AddWithValue("@Qty", qty);
-                logCmd.ExecuteNonQuery();
+                MessageBox.Show("Please select a location.", "Missing Location",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
 
-            MessageBox.Show("Quantity added successfully!");
-            LoadItemData();
-            LoadMovementHistory();
+            int locationId = Convert.ToInt32(((ComboBoxItem)LocationcomboBox.SelectedItem).Tag);
+            string uom = "pcs"; // Or fetch from a textbox if needed
+
+            if (_manager.AddStock(_stockId, locationId, qty, uom))
+            {
+                MessageBox.Show("Quantity added successfully!");
+                LoadItemData();
+                LoadMovementHistory();
+            }
         }
 
         private void Deductbutton_Click(object sender, EventArgs e)
@@ -59,40 +57,22 @@ namespace Sumulong_Enterprise
                 return;
             }
 
-            var table = itemdataGridView.DataSource as DataTable;
-            if (table == null || table.Rows.Count == 0)
+            if (LocationcomboBox.SelectedIndex == -1)
             {
-                MessageBox.Show("Item data not loaded.");
+                MessageBox.Show("Please select a location.", "Missing Location",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            int currentQty = Convert.ToInt32(table.Rows[0]["Quantity"]);
-            if (qty > currentQty)
+            int locationId = Convert.ToInt32(((ComboBoxItem)LocationcomboBox.SelectedItem).Tag);
+            string uom = "pcs";
+
+            if (_manager.DeductStock(_stockId, locationId, qty, uom))
             {
-                MessageBox.Show("Insufficient stock!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                MessageBox.Show("Quantity deducted successfully!");
+                LoadItemData();
+                LoadMovementHistory();
             }
-
-            using (SQLiteConnection con = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;"))
-            {
-                con.Open();
-
-                string updateQuery = "UPDATE INVENTORY SET Quantity = Quantity - @Qty WHERE StockID = @StockID";
-                SQLiteCommand cmd = new SQLiteCommand(updateQuery, con);
-                cmd.Parameters.AddWithValue("@Qty", qty);
-                cmd.Parameters.AddWithValue("@StockID", _stockId);
-                cmd.ExecuteNonQuery();
-
-                string logQuery = "INSERT INTO MOVEMENTS (StockID, ActionType, Quantity, Date) VALUES (@StockID, 'DEDUCT', @Qty, DATETIME('now'))";
-                SQLiteCommand logCmd = new SQLiteCommand(logQuery, con);
-                logCmd.Parameters.AddWithValue("@StockID", _stockId);
-                logCmd.Parameters.AddWithValue("@Qty", qty);
-                logCmd.ExecuteNonQuery();
-            }
-
-            MessageBox.Show("Quantity deducted successfully!");
-            LoadItemData();
-            LoadMovementHistory();
         }
 
         private void transferbutton_Click(object sender, EventArgs e)
@@ -103,9 +83,18 @@ namespace Sumulong_Enterprise
                 return;
             }
 
-            if (LocationcomboBox.SelectedIndex == -1)
+            if (LocationcomboBox.SelectedIndex == -1 || ToLocationcomboBox.SelectedIndex == -1)
             {
-                MessageBox.Show("Please select a location.");
+                MessageBox.Show("Please select both source and destination locations.");
+                return;
+            }
+
+            int fromLocationId = Convert.ToInt32(((ComboBoxItem)LocationcomboBox.SelectedItem).Tag);
+            int toLocationId = Convert.ToInt32(((ComboBoxItem)ToLocationcomboBox.SelectedItem).Tag);
+
+            if (fromLocationId == toLocationId)
+            {
+                MessageBox.Show("Cannot transfer to the same location.");
                 return;
             }
 
@@ -115,129 +104,96 @@ namespace Sumulong_Enterprise
                 return;
             }
 
-            var table = itemdataGridView.DataSource as DataTable;
-            if (table == null || table.Rows.Count == 0)
+            string uom = "pcs"; // Unit of measurement
+            string transferCode = codetextBox.Text;
+
+            if (_manager.TransferStock(_stockId, fromLocationId, toLocationId, qty, uom, transferCode))
             {
-                MessageBox.Show("Item data not loaded.");
-                return;
+                MessageBox.Show("Transfer completed successfully.");
+                LoadItemData();
+                LoadMovementHistory();
             }
-
-            int currentQty = Convert.ToInt32(table.Rows[0]["Quantity"]);
-            if (qty > currentQty)
-            {
-                MessageBox.Show("Insufficient stock!");
-                return;
-            }
-
-            string newLocation = LocationcomboBox.SelectedItem.ToString();
-
-            using (SQLiteConnection con = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;"))
-            {
-                con.Open();
-
-                string deductQuery = "UPDATE INVENTORY SET Quantity = Quantity - @Qty WHERE StockID = @StockID";
-                SQLiteCommand cmdDeduct = new SQLiteCommand(deductQuery, con);
-                cmdDeduct.Parameters.AddWithValue("@Qty", qty);
-                cmdDeduct.Parameters.AddWithValue("@StockID", _stockId);
-                cmdDeduct.ExecuteNonQuery();
-
-                string addQuery = @"
-                    INSERT INTO INVENTORY 
-                    (PartID, ModelID, SupplierID, SRP, WS_Price, InternalCode, LocationName, Quantity)
-                    SELECT PartID, ModelID, SupplierID, SRP, WS_Price, InternalCode, @LocationName, @Qty
-                    FROM INVENTORY WHERE StockID = @StockID
-                    ON CONFLICT(PartID, ModelID, SupplierID, LocationName)
-                    DO UPDATE SET Quantity = Quantity + @Qty;
-                ";
-
-                SQLiteCommand cmdAdd = new SQLiteCommand(addQuery, con);
-                cmdAdd.Parameters.AddWithValue("@LocationName", newLocation);
-                cmdAdd.Parameters.AddWithValue("@Qty", qty);
-                cmdAdd.Parameters.AddWithValue("@StockID", _stockId);
-                cmdAdd.ExecuteNonQuery();
-
-                string logQuery = @"
-                    INSERT INTO MOVEMENTS (StockID, ActionType, Quantity, Location, TransferCode, Date)
-                    VALUES (@StockID, 'TRANSFER', @Qty, @Loc, @Code, DATETIME('now'))
-                ";
-
-                SQLiteCommand logCmd = new SQLiteCommand(logQuery, con);
-                logCmd.Parameters.AddWithValue("@StockID", _stockId);
-                logCmd.Parameters.AddWithValue("@Qty", qty);
-                logCmd.Parameters.AddWithValue("@Loc", newLocation);
-                logCmd.Parameters.AddWithValue("@Code", codetextBox.Text);
-                logCmd.ExecuteNonQuery();
-            }
-
-            MessageBox.Show("Transfer completed successfully.");
-            LoadItemData();
-            LoadMovementHistory();
         }
+
 
         private void LoadLocations()
         {
-            using (SQLiteConnection con = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;"))
-            {
-                con.Open();
-                string query = "SELECT DISTINCT LocationName FROM LOCATIONS";
-                SQLiteCommand cmd = new SQLiteCommand(query, con);
-                SQLiteDataReader reader = cmd.ExecuteReader();
+            LocationcomboBox.Items.Clear();
+            ToLocationcomboBox.Items.Clear();
 
-                while (reader.Read())
+            using var conn = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;");
+            conn.Open();
+
+            using var cmd = new SQLiteCommand("SELECT LocationID, LocationName FROM LOCATIONS ORDER BY LocationName;", conn);
+            using var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                var item = new ComboBoxItem
                 {
-                    LocationcomboBox.Items.Add(reader["LocationName"].ToString());
-                }
+                    Text = reader["LocationName"].ToString(),
+                    Tag = Convert.ToInt32(reader["LocationID"])
+                };
+
+                LocationcomboBox.Items.Add(item);
+                ToLocationcomboBox.Items.Add(item);
             }
+
+            if (LocationcomboBox.Items.Count > 0) LocationcomboBox.SelectedIndex = 0;
+            if (ToLocationcomboBox.Items.Count > 0) ToLocationcomboBox.SelectedIndex = 0;
         }
 
         private void LoadItemData()
         {
-            using (SQLiteConnection con = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;"))
-            {
-                con.Open();
-                string query = @"
-                    SELECT 
-                        i.StockID,
-                        p.PartNumber,
-                        p.PartName,
-                        p.Brand,
-                        m.ModelName,
-                        s.SupplierName,
-                        i.Quantity,
-                        i.SRP,
-                        i.WS_Price,
-                        i.InternalCode
-                    FROM INVENTORY i
-                    JOIN PARTS p ON i.PartID = p.PartID
-                    JOIN MOTORCYCLE_MODELS m ON i.ModelID = m.ModelID
-                    JOIN SUPPLIERS s ON i.SupplierID = s.SupplierID
-                    WHERE i.StockID = @StockID
-                ";
+            using var conn = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;");
+            conn.Open();
 
-                using (SQLiteCommand cmd = new SQLiteCommand(query, con))
-                {
-                    cmd.Parameters.AddWithValue("@StockID", _stockId);
+            string query = @"
+                SELECT 
+                    i.StockID,
+                    p.PartNumber,
+                    p.PartName,
+                    p.Brand,
+                    m.ModelName,
+                    s.SupplierName,
+                    COALESCE(SUM(il.Quantity), 0) AS Quantity,
+                    i.SRP,
+                    i.WS_Price,
+                    i.InternalCode
+                FROM INVENTORY i
+                JOIN PARTS p ON i.PartID = p.PartID
+                JOIN MOTORCYCLE_MODELS m ON i.ModelID = m.ModelID
+                JOIN SUPPLIERS s ON i.SupplierID = s.SupplierID
+                LEFT JOIN INVENTORY_LOCATIONS il ON il.StockID = i.StockID
+                WHERE i.StockID = @StockID
+                GROUP BY i.StockID, p.PartNumber, p.PartName, p.Brand, m.ModelName, s.SupplierName, i.SRP, i.WS_Price, i.InternalCode;
+            ";
 
-                    using (SQLiteDataAdapter adapter = new SQLiteDataAdapter(cmd))
-                    {
-                        DataTable table = new DataTable();
-                        adapter.Fill(table);
+            using var cmd = new SQLiteCommand(query, conn);
+            cmd.Parameters.AddWithValue("@StockID", _stockId);
 
-                        itemdataGridView.DataSource = table;
+            using var adapter = new SQLiteDataAdapter(cmd);
+            DataTable table = new DataTable();
+            adapter.Fill(table);
 
-                        if (table.Columns.Contains("StockID"))
-                            itemdataGridView.Columns["StockID"].Visible = false;
+            itemdataGridView.DataSource = table;
 
-                        if (table.Columns.Contains("InternalCode"))
-                            itemdataGridView.Columns["InternalCode"].HeaderText = "Code";
-                    }
-                }
-            }
+            if (table.Columns.Contains("StockID"))
+                itemdataGridView.Columns["StockID"].Visible = false;
+            if (table.Columns.Contains("InternalCode"))
+                itemdataGridView.Columns["InternalCode"].HeaderText = "Code";
         }
 
         private void LoadMovementHistory()
         {
-            // TODO: Implement movement history tab later
+            // Implement movement history retrieval if needed
+        }
+
+        private class ComboBoxItem
+        {
+            public string Text { get; set; }
+            public object Tag { get; set; }
+            public override string ToString() => Text;
         }
     }
 }

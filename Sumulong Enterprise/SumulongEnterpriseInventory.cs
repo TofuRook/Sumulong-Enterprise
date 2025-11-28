@@ -7,10 +7,7 @@ namespace Sumulong_Enterprise
 {
     public partial class SumulongEnterpriseInventory : Form
     {
-        private DataTable inventoryTable = new DataTable();
         private InventoryManager manager = new InventoryManager();
-
-
 
         public SumulongEnterpriseInventory()
         {
@@ -20,13 +17,12 @@ namespace Sumulong_Enterprise
         private void Form1_Load(object sender, EventArgs e)
         {
             LoadInventory();
-            FillComboBox();
+            FillComboBoxes();
         }
-
 
         private void searchButton_Click(object sender, EventArgs e)
         {
-            UseFilters();
+            ApplyFilters();
         }
 
         private void clearButton_Click(object sender, EventArgs e)
@@ -39,16 +35,19 @@ namespace Sumulong_Enterprise
         {
             if (e.RowIndex >= 0)
             {
-                // Get the StockID of the selected row
-                long stockId = Convert.ToInt64(dataGridViewInventory.Rows[e.RowIndex]
-                    .Cells["StockID"].Value);
+                // Ensure StockID column exists
+                if (!dataGridViewInventory.Columns.Contains("StockID"))
+                {
+                    MessageBox.Show("StockID not found. Cannot open details.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
 
-                // Open the ItemDetails form for that stock
+                long stockId = Convert.ToInt64(dataGridViewInventory.Rows[e.RowIndex].Cells["StockID"].Value);
+
                 ItemDetails detailsForm = new ItemDetails(stockId);
                 detailsForm.ShowDialog();
             }
         }
-
 
         public void LoadInventory()
         {
@@ -57,32 +56,32 @@ namespace Sumulong_Enterprise
             FormatInventoryGrid();
         }
 
-        public void FillComboBox()
+        private void FillComboBoxes()
         {
             manager.PopulateComboBox(modelComboBox,
                 "SELECT DISTINCT m.ModelName FROM MOTORCYCLE_MODELS m " +
-                "JOIN INVENTORY s ON s.ModelID = m.ModelID;");
+                "JOIN INVENTORY i ON i.ModelID = m.ModelID;");
             manager.PopulateComboBox(brandComboBox, "SELECT DISTINCT Brand FROM PARTS;");
             manager.PopulateComboBox(partComboBox, "SELECT DISTINCT PartName FROM PARTS;");
         }
 
-        public void UseFilters()
+        private void ApplyFilters()
         {
             var dt = manager.FilterInventory(
-                        brandComboBox.Text,
-                        modelComboBox.Text,
-                        partComboBox.Text
-                    );
+                brandComboBox.Text,
+                modelComboBox.Text,
+                partComboBox.Text
+            );
 
             dataGridViewInventory.DataSource = dt;
             FormatInventoryGrid();
         }
 
-        public void ClearFilters()
+        private void ClearFilters()
         {
-            manager.ClearFilters(brandComboBox);
-            manager.ClearFilters(modelComboBox);
-            manager.ClearFilters(partComboBox);
+            brandComboBox.SelectedIndex = -1;
+            modelComboBox.SelectedIndex = -1;
+            partComboBox.SelectedIndex = -1;
         }
 
         private void FormatInventoryGrid()
@@ -92,15 +91,36 @@ namespace Sumulong_Enterprise
             if (grid.Columns.Count == 0)
                 return;
 
-            grid.Columns["ModelName"].HeaderText = "Model/Motorcycle";
-            grid.Columns["Brand"].HeaderText = "Brand";
-            grid.Columns["PartName"].HeaderText = "Part Name";
-            grid.Columns["PartNumber"].HeaderText = "Part Number";
-            grid.Columns["Quantity"].HeaderText = "QTY";
-            grid.Columns["SRP"].HeaderText = "SRP";
-            grid.Columns["WS_Price"].HeaderText = "WS Price";
-            grid.Columns["SupplierName"].HeaderText = "Supplier";
+            // Rename columns for display
+            if (grid.Columns.Contains("ModelName"))
+                grid.Columns["ModelName"].HeaderText = "Model/Motorcycle";
 
+            if (grid.Columns.Contains("Brand"))
+                grid.Columns["Brand"].HeaderText = "Brand";
+
+            if (grid.Columns.Contains("PartName"))
+                grid.Columns["PartName"].HeaderText = "Part Name";
+
+            if (grid.Columns.Contains("PartNumber"))
+                grid.Columns["PartNumber"].HeaderText = "Part Number";
+
+            if (grid.Columns.Contains("Quantity"))
+                grid.Columns["Quantity"].HeaderText = "QTY";
+
+            if (grid.Columns.Contains("SRP"))
+                grid.Columns["SRP"].HeaderText = "SRP";
+
+            if (grid.Columns.Contains("WS_Price"))
+                grid.Columns["WS_Price"].HeaderText = "WS Price";
+
+            if (grid.Columns.Contains("SupplierName"))
+                grid.Columns["SupplierName"].HeaderText = "Supplier";
+
+            // Optional: hide StockID column but keep it for reference
+            if (grid.Columns.Contains("StockID"))
+                grid.Columns["StockID"].Visible = false;
+
+            // Set display order
             grid.Columns["ModelName"].DisplayIndex = 0;
             grid.Columns["Brand"].DisplayIndex = 1;
             grid.Columns["PartName"].DisplayIndex = 2;
@@ -112,5 +132,16 @@ namespace Sumulong_Enterprise
 
             grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         }
+
+        private void addButton_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void deleteButton_Click(object sender, EventArgs e)
+        {
+
+        }
     }
+
 }
