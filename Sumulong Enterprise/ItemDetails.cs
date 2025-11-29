@@ -305,5 +305,10 @@ namespace Sumulong_Enterprise
             // Refresh main grid
             _mainForm?.RefreshInventoryGrid();
         }
+
+        private void QuantitytextBox_TextChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }

@@ -9,7 +9,7 @@ namespace Sumulong_Enterprise
     public partial class SumulongEnterpriseInventory : Form
     {
         private InventoryManager manager = new InventoryManager();
-        
+
         public SumulongEnterpriseInventory()
         {
             InitializeComponent();
@@ -151,6 +151,36 @@ namespace Sumulong_Enterprise
         }
 
         private void deleteButton_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void modelComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void brandComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label3_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label4_Click(object sender, EventArgs e)
         {
 
         }

@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ItemDetails));
             newItemTab = new TabPage();
             btnSaveItems = new Button();
             dataGridView1 = new DataGridView();
@@ -52,12 +53,15 @@
             itemdataGridView = new DataGridView();
             tabControl1 = new TabControl();
             editItemTab = new TabPage();
+            pictureBox1 = new PictureBox();
+            label2 = new Label();
             newItemTab.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
             stockTab.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)movementDataGridView).BeginInit();
             ((System.ComponentModel.ISupportInitialize)itemdataGridView).BeginInit();
             tabControl1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
             // newItemTab
@@ -133,6 +137,8 @@
             // 
             // stockTab
             // 
+            stockTab.Controls.Add(label2);
+            stockTab.Controls.Add(pictureBox1);
             stockTab.Controls.Add(movementDataGridView);
             stockTab.Controls.Add(ToLocationcomboBox);
             stockTab.Controls.Add(label1);
@@ -143,6 +149,7 @@
             stockTab.Controls.Add(Deductbutton);
             stockTab.Controls.Add(Addbutton);
             stockTab.Controls.Add(itemdataGridView);
+            stockTab.ForeColor = Color.Black;
             stockTab.Location = new Point(4, 24);
             stockTab.Name = "stockTab";
             stockTab.Padding = new Padding(3);
@@ -166,7 +173,7 @@
             // ToLocationcomboBox
             // 
             ToLocationcomboBox.FormattingEnabled = true;
-            ToLocationcomboBox.Location = new Point(267, 37);
+            ToLocationcomboBox.Location = new Point(641, 19);
             ToLocationcomboBox.Name = "ToLocationcomboBox";
             ToLocationcomboBox.Size = new Size(121, 23);
             ToLocationcomboBox.TabIndex = 8;
@@ -175,23 +182,24 @@
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(530, 45);
+            label1.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label1.Location = new Point(135, 86);
             label1.Name = "label1";
-            label1.Size = new Size(147, 15);
+            label1.Size = new Size(157, 15);
             label1.TabIndex = 7;
-            label1.Text = "CODE for Morong Transfer";
+            label1.Text = "CODE for Morong Transfer:";
             // 
             // codetextBox
             // 
-            codetextBox.Location = new Point(530, 75);
+            codetextBox.Location = new Point(135, 104);
             codetextBox.Name = "codetextBox";
-            codetextBox.Size = new Size(100, 23);
+            codetextBox.Size = new Size(293, 23);
             codetextBox.TabIndex = 6;
             // 
             // LocationcomboBox
             // 
             LocationcomboBox.FormattingEnabled = true;
-            LocationcomboBox.Location = new Point(394, 37);
+            LocationcomboBox.Location = new Point(496, 19);
             LocationcomboBox.Name = "LocationcomboBox";
             LocationcomboBox.Size = new Size(121, 23);
             LocationcomboBox.TabIndex = 5;
@@ -199,39 +207,43 @@
             // 
             // QuantitytextBox
             // 
-            QuantitytextBox.Location = new Point(135, 37);
+            QuantitytextBox.Location = new Point(196, 19);
             QuantitytextBox.Name = "QuantitytextBox";
-            QuantitytextBox.Size = new Size(100, 23);
+            QuantitytextBox.Size = new Size(232, 23);
             QuantitytextBox.TabIndex = 4;
+            QuantitytextBox.TextChanged += QuantitytextBox_TextChanged;
             // 
             // transferbutton
             // 
-            transferbutton.Location = new Point(267, 75);
+            transferbutton.BackColor = Color.LightSteelBlue;
+            transferbutton.Location = new Point(353, 48);
             transferbutton.Name = "transferbutton";
             transferbutton.Size = new Size(75, 23);
             transferbutton.TabIndex = 3;
             transferbutton.Text = "Transfer";
-            transferbutton.UseVisualStyleBackColor = true;
+            transferbutton.UseVisualStyleBackColor = false;
             transferbutton.Click += transferbutton_Click;
             // 
             // Deductbutton
             // 
-            Deductbutton.Location = new Point(135, 104);
+            Deductbutton.BackColor = Color.RosyBrown;
+            Deductbutton.Location = new Point(244, 48);
             Deductbutton.Name = "Deductbutton";
             Deductbutton.Size = new Size(103, 23);
             Deductbutton.TabIndex = 2;
             Deductbutton.Text = "Deduct Stock";
-            Deductbutton.UseVisualStyleBackColor = true;
+            Deductbutton.UseVisualStyleBackColor = false;
             Deductbutton.Click += Deductbutton_Click;
             // 
             // Addbutton
             // 
-            Addbutton.Location = new Point(135, 75);
+            Addbutton.BackColor = Color.DarkSeaGreen;
+            Addbutton.Location = new Point(135, 48);
             Addbutton.Name = "Addbutton";
             Addbutton.Size = new Size(103, 23);
             Addbutton.TabIndex = 1;
             Addbutton.Text = "Add Stock";
-            Addbutton.UseVisualStyleBackColor = true;
+            Addbutton.UseVisualStyleBackColor = false;
             Addbutton.Click += Addbutton_Click;
             // 
             // itemdataGridView
@@ -263,10 +275,33 @@
             editItemTab.Text = "Edit Item";
             editItemTab.UseVisualStyleBackColor = true;
             // 
+            // pictureBox1
+            // 
+            pictureBox1.BackColor = SystemColors.Control;
+            pictureBox1.BorderStyle = BorderStyle.Fixed3D;
+            pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
+            pictureBox1.Location = new Point(6, 14);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(123, 113);
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+            pictureBox1.TabIndex = 12;
+            pictureBox1.TabStop = false;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label2.Location = new Point(135, 27);
+            label2.Name = "label2";
+            label2.Size = new Size(55, 15);
+            label2.TabIndex = 13;
+            label2.Text = "Quantity";
+            // 
             // ItemDetails
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.DarkSlateBlue;
             ClientSize = new Size(800, 350);
             Controls.Add(tabControl1);
             Name = "ItemDetails";
@@ -278,6 +313,7 @@
             ((System.ComponentModel.ISupportInitialize)movementDataGridView).EndInit();
             ((System.ComponentModel.ISupportInitialize)itemdataGridView).EndInit();
             tabControl1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
         }
 
@@ -307,5 +343,7 @@
         private DataGridViewTextBoxColumn WS_Price;
         private DataGridViewTextBoxColumn Supplier;
         private Button btnSaveItems;
+        private PictureBox pictureBox1;
+        private Label label2;
     }
 }
