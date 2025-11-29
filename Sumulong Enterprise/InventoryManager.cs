@@ -18,25 +18,32 @@ namespace Sumulong_Enterprise
             {
                 conn.Open();
                 string query = @"
-                    SELECT 
-                        s.StockID,
-                        p.PartName,
-                        p.PartNumber,
-                        p.Brand,
-                        m.ModelName,
-                        sup.SupplierName,
-                        l.LocationName,
-                        il.Quantity,
-                        s.SRP,
-                        s.WS_Price,
-                        s.InternalCode
-                    FROM INVENTORY s
-                    JOIN PARTS p ON s.PartID = p.PartID
-                    JOIN MOTORCYCLE_MODELS m ON s.ModelID = m.ModelID
-                    JOIN SUPPLIERS sup ON s.SupplierID = sup.SupplierID
-                    JOIN INVENTORY_LOCATIONS il ON il.StockID = s.StockID
-                    JOIN LOCATIONS l ON il.LocationID = l.LocationID;
-                ";
+            SELECT 
+                s.StockID,
+                p.PartName,
+                p.PartNumber,
+                p.Brand,
+                m.ModelName,
+                sup.SupplierName,
+
+                -- Location and quantity fall back to NULL or 0 if not existing
+                l.LocationName,
+                COALESCE(il.Quantity, 0) AS Quantity,
+
+                s.SRP,
+                s.WS_Price,
+                s.InternalCode
+            FROM INVENTORY s
+            JOIN PARTS p ON s.PartID = p.PartID
+            JOIN MOTORCYCLE_MODELS m ON s.ModelID = m.ModelID
+            JOIN SUPPLIERS sup ON s.SupplierID = sup.SupplierID
+
+            -- MAKE THEM OPTIONAL
+            LEFT JOIN INVENTORY_LOCATIONS il ON il.StockID = s.StockID
+            LEFT JOIN LOCATIONS l ON il.LocationID = l.LocationID
+
+            ORDER BY s.StockID;
+        ";
 
                 using (var cmd = new SQLiteCommand(query, conn))
                 using (var adapter = new SQLiteDataAdapter(cmd))
@@ -434,7 +441,7 @@ namespace Sumulong_Enterprise
         #endregion
 
         public void AddOrUpdateItem(string model, string brand, string partName, string partNumber,
-        int quantity, decimal srp, decimal wsPrice, string supplier)
+            int quantity, decimal srp, decimal wsPrice, string supplier)
         {
             using var conn = new SQLiteConnection("Data Source=SumulongInventory.db;Version=3;");
             conn.Open();
@@ -452,7 +459,9 @@ namespace Sumulong_Enterprise
                         modelId = Convert.ToInt64(result);
                     else
                     {
-                        using var insert = new SQLiteCommand("INSERT INTO MOTORCYCLE_MODELS (ModelName) VALUES (@Model); SELECT last_insert_rowid();", conn);
+                        using var insert = new SQLiteCommand(
+                            "INSERT INTO MOTORCYCLE_MODELS (ModelName) VALUES (@Model); SELECT last_insert_rowid();",
+                            conn);
                         insert.Parameters.AddWithValue("@Model", model);
                         modelId = (long)insert.ExecuteScalar();
                     }
@@ -468,44 +477,147 @@ namespace Sumulong_Enterprise
                         supplierId = Convert.ToInt64(result);
                     else
                     {
-                        using var insert = new SQLiteCommand("INSERT INTO SUPPLIERS (SupplierName) VALUES (@Supplier); SELECT last_insert_rowid();", conn);
+                        using var insert = new SQLiteCommand(
+                            "INSERT INTO SUPPLIERS (SupplierName) VALUES (@Supplier); SELECT last_insert_rowid();",
+                            conn);
                         insert.Parameters.AddWithValue("@Supplier", supplier);
                         supplierId = (long)insert.ExecuteScalar();
                     }
                 }
 
-                // 3. Ensure part exists
+                // 3. Ensure part exists (allow missing part number)
+                if (string.IsNullOrWhiteSpace(partNumber))
+                    partNumber = "N/A";
+
                 long partId;
-                using (var cmd = new SQLiteCommand("SELECT PartID FROM PARTS WHERE PartName=@Part AND PartNumber=@PartNumber", conn))
+                using (var cmd = new SQLiteCommand(
+                    "SELECT PartID FROM PARTS WHERE PartName=@Part AND PartNumber=@Num AND Brand=@Brand",
+                    conn))
                 {
                     cmd.Parameters.AddWithValue("@Part", partName);
-                    cmd.Parameters.AddWithValue("@PartNumber", partNumber);
+                    cmd.Parameters.AddWithValue("@Num", partNumber);
+                    cmd.Parameters.AddWithValue("@Brand", brand);
+
                     var result = cmd.ExecuteScalar();
                     if (result != null)
                         partId = Convert.ToInt64(result);
                     else
                     {
                         using var insert = new SQLiteCommand(
-                            "INSERT INTO PARTS (PartName, PartNumber, Brand) VALUES (@Part, @PartNumber, @Brand); SELECT last_insert_rowid();", conn);
+                            "INSERT INTO PARTS (PartName, PartNumber, Brand) VALUES (@Part,@Num,@Brand); SELECT last_insert_rowid();",
+                            conn);
                         insert.Parameters.AddWithValue("@Part", partName);
-                        insert.Parameters.AddWithValue("@PartNumber", partNumber);
+                        insert.Parameters.AddWithValue("@Num", partNumber);
                         insert.Parameters.AddWithValue("@Brand", brand);
+
                         partId = (long)insert.ExecuteScalar();
                     }
                 }
 
-                // 4. Insert into INVENTORY
+                // 4. Check inventory for existing entry
+                long? stockId = null;
+                int existingQty = 0;
+
                 using (var cmd = new SQLiteCommand(
-                    "INSERT INTO INVENTORY (PartID, ModelID, SupplierID, Quantity, SRP, WS_Price, InternalCode) VALUES (@PartID,@ModelID,@SupplierID,@Qty,@SRP,@WS,@Code);", conn))
+                    "SELECT StockID, Quantity FROM INVENTORY WHERE PartID=@PartID AND ModelID=@ModelID",
+                    conn))
                 {
                     cmd.Parameters.AddWithValue("@PartID", partId);
                     cmd.Parameters.AddWithValue("@ModelID", modelId);
-                    cmd.Parameters.AddWithValue("@SupplierID", supplierId);
-                    cmd.Parameters.AddWithValue("@Qty", quantity);
-                    cmd.Parameters.AddWithValue("@SRP", srp);
-                    cmd.Parameters.AddWithValue("@WS", wsPrice);
-                    cmd.Parameters.AddWithValue("@Code", Guid.NewGuid().ToString());
-                    cmd.ExecuteNonQuery();
+
+                    using var r = cmd.ExecuteReader();
+                    if (r.Read())
+                    {
+                        stockId = r.GetInt64(0);
+                        existingQty = r.GetInt32(1);
+                    }
+                }
+
+                // 5. Insert or update INVENTORY
+                if (stockId.HasValue)
+                {
+                    using var update = new SQLiteCommand(
+                        "UPDATE INVENTORY SET Quantity=@Qty, SRP=@SRP, WS_Price=@WS WHERE StockID=@StockID",
+                        conn);
+
+                    update.Parameters.AddWithValue("@Qty", existingQty + quantity);
+                    update.Parameters.AddWithValue("@SRP", srp);
+                    update.Parameters.AddWithValue("@WS", wsPrice);
+                    update.Parameters.AddWithValue("@StockID", stockId.Value);
+
+                    update.ExecuteNonQuery();
+                }
+                else
+                {
+                    using var insert = new SQLiteCommand(
+                        "INSERT INTO INVENTORY (PartID, ModelID, SupplierID, Quantity, SRP, WS_Price, InternalCode) " +
+                        "VALUES (@PartID,@ModelID,@SupplierID,@Qty,@SRP,@WS,@Code); SELECT last_insert_rowid();",
+                        conn);
+
+                    insert.Parameters.AddWithValue("@PartID", partId);
+                    insert.Parameters.AddWithValue("@ModelID", modelId);
+                    insert.Parameters.AddWithValue("@SupplierID", supplierId);
+                    insert.Parameters.AddWithValue("@Qty", quantity);
+                    insert.Parameters.AddWithValue("@SRP", srp);
+                    insert.Parameters.AddWithValue("@WS", wsPrice);
+                    insert.Parameters.AddWithValue("@Code", Guid.NewGuid().ToString());
+
+                    stockId = (long)insert.ExecuteScalar();
+                }
+
+                // 6. Insert or Update INVENTORY_LOCATIONS for "Main" location
+                long mainLocationId;
+
+                using (var cmd = new SQLiteCommand(
+                    "SELECT LocationID FROM LOCATIONS WHERE LocationName='Main Warehouse'",
+                    conn))
+                {
+                    var res = cmd.ExecuteScalar();
+                    if (res != null)
+                        mainLocationId = Convert.ToInt64(res);
+                    else
+                    {
+                        using var insert = new SQLiteCommand(
+                            "INSERT INTO LOCATIONS (LocationName) VALUES ('Main Warehouse'); SELECT last_insert_rowid();",
+                            conn);
+                        mainLocationId = (long)insert.ExecuteScalar();
+                    }
+                }
+
+                // Insert or update stock qty in main location
+                using (var cmd = new SQLiteCommand(
+                    "SELECT Quantity FROM INVENTORY_LOCATIONS WHERE StockID=@StockID AND LocationID=@Loc",
+                    conn))
+                {
+                    cmd.Parameters.AddWithValue("@StockID", stockId.Value);
+                    cmd.Parameters.AddWithValue("@Loc", mainLocationId);
+
+                    var exists = cmd.ExecuteScalar();
+
+                    if (exists != null)
+                    {
+                        using var update = new SQLiteCommand(
+                            "UPDATE INVENTORY_LOCATIONS SET Quantity = Quantity + @Qty WHERE StockID=@StockID AND LocationID=@Loc",
+                            conn);
+
+                        update.Parameters.AddWithValue("@Qty", quantity);
+                        update.Parameters.AddWithValue("@StockID", stockId.Value);
+                        update.Parameters.AddWithValue("@Loc", mainLocationId);
+
+                        update.ExecuteNonQuery();
+                    }
+                    else
+                    {
+                        using var insert = new SQLiteCommand(
+                            "INSERT INTO INVENTORY_LOCATIONS (StockID, LocationID, Quantity) VALUES (@StockID, @Loc, @Qty)",
+                            conn);
+
+                        insert.Parameters.AddWithValue("@StockID", stockId.Value);
+                        insert.Parameters.AddWithValue("@Loc", mainLocationId);
+                        insert.Parameters.AddWithValue("@Qty", quantity);
+
+                        insert.ExecuteNonQuery();
+                    }
                 }
 
                 transaction.Commit();

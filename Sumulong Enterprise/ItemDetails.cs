@@ -303,7 +303,8 @@ namespace Sumulong_Enterprise
             dataGridView1.Rows.Clear();
 
             // Refresh main grid
-            _mainForm?.RefreshInventoryGrid();
+            _mainForm.RefreshInventoryGrid();
+            _mainForm.FillComboBoxes();
         }
 
         private void QuantitytextBox_TextChanged(object sender, EventArgs e)

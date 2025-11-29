@@ -57,7 +57,7 @@ namespace Sumulong_Enterprise
             FormatInventoryGrid();
         }
 
-        private void FillComboBoxes()
+        public void FillComboBoxes()
         {
             manager.PopulateComboBox(modelComboBox,
                 "SELECT DISTINCT m.ModelName FROM MOTORCYCLE_MODELS m " +
