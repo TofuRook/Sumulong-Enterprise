@@ -311,5 +311,10 @@ namespace Sumulong_Enterprise
         {
 
         }
+
+        private void editItemTab_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

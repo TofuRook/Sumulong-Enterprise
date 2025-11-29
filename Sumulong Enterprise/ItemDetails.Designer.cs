@@ -41,6 +41,8 @@
             WS_Price = new DataGridViewTextBoxColumn();
             Supplier = new DataGridViewTextBoxColumn();
             stockTab = new TabPage();
+            label2 = new Label();
+            pictureBox1 = new PictureBox();
             movementDataGridView = new DataGridView();
             ToLocationcomboBox = new ComboBox();
             label1 = new Label();
@@ -53,15 +55,15 @@
             itemdataGridView = new DataGridView();
             tabControl1 = new TabControl();
             editItemTab = new TabPage();
-            pictureBox1 = new PictureBox();
-            label2 = new Label();
+            label3 = new Label();
             newItemTab.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
             stockTab.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)movementDataGridView).BeginInit();
             ((System.ComponentModel.ISupportInitialize)itemdataGridView).BeginInit();
             tabControl1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            editItemTab.SuspendLayout();
             SuspendLayout();
             // 
             // newItemTab
@@ -157,6 +159,28 @@
             stockTab.TabIndex = 0;
             stockTab.Text = "Control Stock";
             stockTab.UseVisualStyleBackColor = true;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label2.Location = new Point(135, 27);
+            label2.Name = "label2";
+            label2.Size = new Size(55, 15);
+            label2.TabIndex = 13;
+            label2.Text = "Quantity";
+            // 
+            // pictureBox1
+            // 
+            pictureBox1.BackColor = SystemColors.Control;
+            pictureBox1.BorderStyle = BorderStyle.Fixed3D;
+            pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
+            pictureBox1.Location = new Point(6, 14);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(123, 113);
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+            pictureBox1.TabIndex = 12;
+            pictureBox1.TabStop = false;
             // 
             // movementDataGridView
             // 
@@ -268,34 +292,24 @@
             // 
             // editItemTab
             // 
+            editItemTab.Controls.Add(label3);
             editItemTab.Location = new Point(4, 24);
             editItemTab.Name = "editItemTab";
             editItemTab.Size = new Size(768, 303);
             editItemTab.TabIndex = 2;
             editItemTab.Text = "Edit Item";
             editItemTab.UseVisualStyleBackColor = true;
+            editItemTab.Click += editItemTab_Click;
             // 
-            // pictureBox1
+            // label3
             // 
-            pictureBox1.BackColor = SystemColors.Control;
-            pictureBox1.BorderStyle = BorderStyle.Fixed3D;
-            pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
-            pictureBox1.Location = new Point(6, 14);
-            pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(123, 113);
-            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
-            pictureBox1.TabIndex = 12;
-            pictureBox1.TabStop = false;
-            // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label2.Location = new Point(135, 27);
-            label2.Name = "label2";
-            label2.Size = new Size(55, 15);
-            label2.TabIndex = 13;
-            label2.Text = "Quantity";
+            label3.AutoSize = true;
+            label3.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label3.Location = new Point(273, 142);
+            label3.Name = "label3";
+            label3.Size = new Size(192, 15);
+            label3.TabIndex = 14;
+            label3.Text = "New feature for the patch. V2.01";
             // 
             // ItemDetails
             // 
@@ -310,10 +324,12 @@
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
             stockTab.ResumeLayout(false);
             stockTab.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ((System.ComponentModel.ISupportInitialize)movementDataGridView).EndInit();
             ((System.ComponentModel.ISupportInitialize)itemdataGridView).EndInit();
             tabControl1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            editItemTab.ResumeLayout(false);
+            editItemTab.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -345,5 +361,6 @@
         private Button btnSaveItems;
         private PictureBox pictureBox1;
         private Label label2;
+        private Label label3;
     }
 }
